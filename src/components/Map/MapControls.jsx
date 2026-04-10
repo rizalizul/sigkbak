@@ -12,7 +12,6 @@ export const MapControls = () => {
     return (
         <>
             <TileLayer key={activeTile} url={TILE_LAYERS[activeTile].url} attribution={TILE_LAYERS[activeTile].attribution} maxZoom={18} />
-
             <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-1">
                 {[
                     { icon: Plus, action: () => map.setZoom(map.getZoom() + 1), title: "Zoom In" },
@@ -29,33 +28,30 @@ export const MapControls = () => {
                     </button>
                 ))}
             </div>
-
             <div className="absolute top-4 right-16 z-[1000]">
-                <div className="relative">
-                    <button
-                        onClick={() => setShowTileMenu((p) => !p)}
-                        className="flex items-center gap-2 px-3 py-2 bg-white/95 backdrop-blur-sm rounded-xl shadow-md border border-slate-100 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-all"
-                    >
-                        <Layers size={14} />
-                        {TILE_LAYERS[activeTile].label}
-                    </button>
-                    {showTileMenu && (
-                        <div className="absolute right-0 top-11 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden min-w-[140px]">
-                            {Object.entries(TILE_LAYERS).map(([key, val]) => (
-                                <button
-                                    key={key}
-                                    onClick={() => {
-                                        setActiveTile(key);
-                                        setShowTileMenu(false);
-                                    }}
-                                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors ${activeTile === key ? "text-blue-600 font-semibold bg-blue-50" : "text-slate-700"}`}
-                                >
-                                    {val.label}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                <button
+                    onClick={() => setShowTileMenu((p) => !p)}
+                    className="flex items-center gap-2 px-3 py-2 bg-white/95 backdrop-blur-sm rounded-xl shadow-md border border-slate-100 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-all"
+                >
+                    <Layers size={14} />
+                    {TILE_LAYERS[activeTile].label}
+                </button>
+                {showTileMenu && (
+                    <div className="absolute right-0 top-11 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden min-w-[140px]">
+                        {Object.entries(TILE_LAYERS).map(([key, val]) => (
+                            <button
+                                key={key}
+                                onClick={() => {
+                                    setActiveTile(key);
+                                    setShowTileMenu(false);
+                                }}
+                                className={`w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors ${activeTile === key ? "text-blue-600 font-semibold bg-blue-50" : "text-slate-700"}`}
+                            >
+                                {val.label}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
         </>
     );

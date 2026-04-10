@@ -29,10 +29,3 @@ export const KBAK_LEVELS = {
     3: { color: "#ea580c", label: "Level 3 – Hasil Verifikasi", fillOpacity: 0.4 },
     4: { color: "#dc2626", label: "Level 4 – Telah Ditetapkan", fillOpacity: 0.5 },
 };
-
-export const KLASIFIKASI_COLORS = {
-    "Karst Permukaan": { hex: "#8b5cf6", emoji: "🏔️" },
-    "Karst Bawah Tanah": { hex: "#3b82f6", emoji: "🕳️" },
-    "Karst Pantai": { hex: "#06b6d4", emoji: "🌊" },
-    default: { hex: "#6b7280", emoji: "📍" },
-};

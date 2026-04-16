@@ -18,7 +18,7 @@ export const createMarkerIcon = (warna = "#6b7280", ikon = "📍") => {
     });
 };
 
-export const buildPopupHTML = (d) => {
+export const buildPopupHTML = (d, isEditor = false) => {
     if (!d) return "<div style='padding:12px'>Data tidak tersedia</div>";
     const warna = d.jenis_objek?.warna || "#6b7280";
     const ikon = d.jenis_objek?.ikon || "📍";
@@ -38,12 +38,22 @@ export const buildPopupHTML = (d) => {
 
     const coords = d.koordinat_y && d.koordinat_x ? `${parseFloat(d.koordinat_y).toFixed(5)}, ${parseFloat(d.koordinat_x).toFixed(5)}` : null;
 
-    // Render atribut JSONB dinamis
     const atributRows = d.atribut
         ? Object.entries(d.atribut)
               .filter(([, v]) => v != null && v !== "" && v !== "null" && v !== "nan")
               .map(([k, v]) => row("•", k.replace(/_/g, " "), String(v)))
               .join("")
+        : "";
+
+    const editBtn = isEditor
+        ? `
+        <div style="padding:8px 16px 12px;">
+            <a href="/admin/data?edit=${d.id}" style="
+                display:flex;align-items:center;justify-content:center;gap:6px;
+                padding:8px;background:#1e293b;color:white;border-radius:10px;
+                font-size:12px;font-weight:600;text-decoration:none;
+            ">✏️ Edit Objek Ini</a>
+        </div>`
         : "";
 
     return `
@@ -58,6 +68,7 @@ export const buildPopupHTML = (d) => {
         ${coords ? row("📍", "Koordinat", coords) : ""}
         ${atributRows}
       </div>
-      ${d.atribut?.foto_url ? `<div style="padding:0 16px 12px;"><img src="${d.atribut.foto_url}" style="width:100%;border-radius:8px;object-fit:cover;max-height:140px;"/></div>` : ""}
+      ${d.atribut?.Foto ? `<div style="padding:0 16px 12px;"><img src="${d.atribut.Foto}" style="width:100%;border-radius:8px;object-fit:cover;max-height:140px;"/></div>` : ""}
+      ${editBtn}
     </div>`;
 };

@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Search, ChevronLeft, ChevronRight, Map, LogIn } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Map, LogIn, LayoutDashboard } from "lucide-react";
 import { LayerControl } from "./LayerControl";
 import { useNavigate } from "react-router-dom";
 
-export const PublicSidebar = ({ jenisList, activeJenisIds, onToggleJenis, showKBAK, onToggleKBAK, searchQuery, onSearch, totalObjek, filteredObjek, objekCount }) => {
+export const PublicSidebar = ({ jenisList, activeJenisIds, onToggleJenis, showKBAK, onToggleKBAK, searchQuery, onSearch, totalObjek, filteredObjek, objekCount, user }) => {
     const [collapsed, setCollapsed] = useState(false);
     const navigate = useNavigate();
 
@@ -68,10 +68,22 @@ export const PublicSidebar = ({ jenisList, activeJenisIds, onToggleJenis, showKB
                 </div>
 
                 {/* Footer */}
-                <div className="px-4 py-3 border-t border-slate-100">
-                    <button onClick={() => navigate("/login")} className="w-full flex items-center justify-center gap-2 py-2 bg-slate-900 text-white rounded-xl text-xs font-medium hover:bg-slate-700 transition-colors">
-                        <LogIn size={13} /> Masuk sebagai Editor
-                    </button>
+                <div className="px-4 py-3 border-t border-slate-100 space-y-1.5">
+                    {user ? (
+                        <>
+                            <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-3 py-2">
+                                <div className="w-6 h-6 bg-slate-800 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">{user.email?.[0]?.toUpperCase()}</div>
+                                <span className="text-xs text-slate-600 truncate">{user.email}</span>
+                            </div>
+                            <button onClick={() => navigate("/admin/dashboard")} className="w-full flex items-center justify-center gap-2 py-2 bg-slate-900 text-white rounded-xl text-xs font-medium hover:bg-slate-700 transition-colors">
+                                <LayoutDashboard size={13} /> Buka Admin Panel
+                            </button>
+                        </>
+                    ) : (
+                        <button onClick={() => navigate("/login")} className="w-full flex items-center justify-center gap-2 py-2 bg-slate-900 text-white rounded-xl text-xs font-medium hover:bg-slate-700 transition-colors">
+                            <LogIn size={13} /> Masuk sebagai Editor
+                        </button>
+                    )}
                 </div>
             </div>
         </>

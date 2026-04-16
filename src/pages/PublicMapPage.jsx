@@ -4,12 +4,14 @@ import { PublicSidebar } from "../components/Sidebar/PublicSidebar";
 import { useJenisObjek } from "../hooks/useJenisObjek";
 import { useObjekSpasial } from "../hooks/useObjekSpasial";
 import { Map, Loader2 } from "lucide-react";
+import { useAuth } from "../hooks/useAuth";
 
 export const PublicMapPage = () => {
     const { jenisList, loading: jenisLoading } = useJenisObjek();
     const [activeJenisIds, setActiveJenisIds] = useState([]);
     const [showKBAK, setShowKBAK] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+    const { user } = useAuth();
 
     const { data: objekData, filtered } = useObjekSpasial(activeJenisIds);
 
@@ -46,7 +48,7 @@ export const PublicMapPage = () => {
 
     return (
         <div style={{ position: "relative", width: "100vw", height: "100vh", overflow: "hidden" }}>
-            <MapView objekList={displayList} showKBAK={showKBAK} onToggleKBAK={() => setShowKBAK((p) => !p)} />
+            <MapView objekList={displayList} showKBAK={showKBAK} onToggleKBAK={() => setShowKBAK((p) => !p)} isEditor={!!user} />
             <PublicSidebar
                 jenisList={jenisList}
                 activeJenisIds={activeJenisIds}
@@ -58,6 +60,7 @@ export const PublicMapPage = () => {
                 totalObjek={objekData.length}
                 filteredObjek={displayList.length}
                 objekCount={objekCount}
+                user={user}
             />
         </div>
     );

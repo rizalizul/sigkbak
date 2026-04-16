@@ -4,7 +4,7 @@ import L from "leaflet";
 import "leaflet.markercluster";
 import { createMarkerIcon, buildPopupHTML } from "../../utils/markerUtils";
 
-export const DynamicLayer = ({ objekList }) => {
+export const DynamicLayer = ({ objekList, isEditor = false }) => {
     const map = useMap();
     const clusterRef = useRef(null);
 
@@ -40,7 +40,7 @@ export const DynamicLayer = ({ objekList }) => {
             const warna = d.jenis_objek?.warna || "#6b7280";
             const ikon = d.jenis_objek?.ikon || "📍";
             const marker = L.marker([lat, lon], { icon: createMarkerIcon(warna, ikon) });
-            marker.bindPopup(buildPopupHTML(d), { maxWidth: 300, minWidth: 290 });
+            marker.bindPopup(buildPopupHTML(d, isEditor), { maxWidth: 300, minWidth: 290 });
             cluster.addLayer(marker);
         });
 
@@ -53,7 +53,7 @@ export const DynamicLayer = ({ objekList }) => {
                 clusterRef.current = null;
             }
         };
-    }, [objekList, map]);
+    }, [objekList, isEditor, map]);
 
     return null;
 };

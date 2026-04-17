@@ -14,3 +14,75 @@ The React Compiler is not enabled on this template because of its impact on dev 
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+```
+sigkbak
+├─ eslint.config.js
+├─ index.html
+├─ package-lock.json
+├─ package.json
+├─ postcss.config.js
+├─ public
+│  ├─ data
+│  │  └─ kbak.geojson
+│  ├─ favicon.svg
+│  └─ icons.svg
+├─ README.md
+├─ src
+│  ├─ App.jsx
+│  ├─ assets
+│  │  ├─ hero.png
+│  │  ├─ react.svg
+│  │  └─ vite.svg
+│  ├─ components
+│  │  ├─ Map
+│  │  │  ├─ DynamicLayer.jsx
+│  │  │  ├─ GeoSearch.jsx
+│  │  │  ├─ KBAKLayer.jsx
+│  │  │  ├─ MapControls.jsx
+│  │  │  ├─ MapView.jsx
+│  │  │  ├─ MeasureTool.jsx
+│  │  │  └─ PermalinkSync.jsx
+│  │  ├─ Sidebar
+│  │  │  ├─ LayerControl.jsx
+│  │  │  └─ PublicSidebar.jsx
+│  │  ├─ UI
+│  │  │  ├─ AtributEditor.jsx
+│  │  │  └─ MapPickerModal.jsx
+│  │  └─ Upload
+│  │     ├─ ColumnSelector.jsx
+│  │     ├─ JenisCombobox.jsx
+│  │     └─ ReviewPanel.jsx
+│  ├─ constants
+│  │  └─ mapConfig.js
+│  ├─ hooks
+│  │  ├─ useAuth.js
+│  │  ├─ useJenisObjek.js
+│  │  ├─ useObjekSpasial.js
+│  │  └─ usePreview.js
+│  ├─ index.css
+│  ├─ lib
+│  │  └─ supabase.js
+│  ├─ main.jsx
+│  ├─ pages
+│  │  ├─ admin
+│  │  │  ├─ AdminLayout.jsx
+│  │  │  ├─ AuditPage.jsx
+│  │  │  ├─ DashboardPage.jsx
+│  │  │  ├─ DataPage.jsx
+│  │  │  ├─ ExportPage.jsx
+│  │  │  ├─ JenisPage.jsx
+│  │  │  ├─ UploadPage.jsx
+│  │  │  └─ UsersPage.jsx
+│  │  ├─ LoginPage.jsx
+│  │  ├─ PublicMapPage.jsx
+│  │  └─ RegisterPage.jsx
+│  ├─ router
+│  │  └─ index.jsx
+│  └─ utils
+│     ├─ markerUtils.js
+│     └─ parseFile.js
+├─ tailwind.config.js
+└─ vite.config.js
+
+```

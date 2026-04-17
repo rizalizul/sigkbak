@@ -1,27 +1,33 @@
 import { useState, useMemo } from "react";
-import { MapView } from "../components/Map/MapView";
-import { PublicSidebar } from "../components/Sidebar/PublicSidebar";
-import { useJenisObjek } from "../hooks/useJenisObjek";
+import { MapView }         from "../components/Map/MapView";
+import { PublicSidebar }   from "../components/Sidebar/PublicSidebar";
+import { useJenisObjek }   from "../hooks/useJenisObjek";
 import { useObjekSpasial } from "../hooks/useObjekSpasial";
-import { Map, Loader2 } from "lucide-react";
-import { useAuth } from "../hooks/useAuth";
+import { useAuth }         from "../hooks/useAuth";
+import { useInitialView }  from "../components/Map/PermalinkSync";
+import { Map, Loader2 }    from "lucide-react";
 
 export const PublicMapPage = () => {
     const { jenisList, loading: jenisLoading } = useJenisObjek();
+    const { user }    = useAuth();
+    const initialView = useInitialView();
+
     const [activeJenisIds, setActiveJenisIds] = useState([]);
-    const [showKBAK, setShowKBAK] = useState(false);
-    const [searchQuery, setSearchQuery] = useState("");
-    const { user } = useAuth();
+    const [showKBAK,       setShowKBAK]       = useState(false);
+    const [searchQuery,    setSearchQuery]    = useState("");
 
     const { data: objekData, filtered } = useObjekSpasial(activeJenisIds);
 
+    // Filter berdasarkan search nama objek
     const displayList = useMemo(() => {
-        if (!searchQuery) return filtered;
+        if (!searchQuery.trim()) return filtered;
         const q = searchQuery.toLowerCase();
-        return filtered.filter((d) => d.nama_objek?.toLowerCase().includes(q) || JSON.stringify(d.atribut)?.toLowerCase().includes(q));
+        return filtered.filter((d) =>
+            d.nama_objek?.toLowerCase().includes(q) ||
+            JSON.stringify(d.atribut)?.toLowerCase().includes(q)
+        );
     }, [filtered, searchQuery]);
 
-    // Hitung jumlah objek per jenis
     const objekCount = useMemo(() => {
         const counts = {};
         objekData.forEach((d) => {
@@ -30,9 +36,8 @@ export const PublicMapPage = () => {
         return counts;
     }, [objekData]);
 
-    const toggleJenis = (id) => {
-        setActiveJenisIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-    };
+    const toggleJenis = (id) =>
+        setActiveJenisIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
 
     if (jenisLoading)
         return (
@@ -48,7 +53,13 @@ export const PublicMapPage = () => {
 
     return (
         <div style={{ position: "relative", width: "100vw", height: "100vh", overflow: "hidden" }}>
-            <MapView objekList={displayList} showKBAK={showKBAK} onToggleKBAK={() => setShowKBAK((p) => !p)} isEditor={!!user} />
+            <MapView
+                objekList={displayList}
+                showKBAK={showKBAK}
+                onToggleKBAK={() => setShowKBAK((p) => !p)}
+                isEditor={!!user}
+                initialView={initialView}
+            />
             <PublicSidebar
                 jenisList={jenisList}
                 activeJenisIds={activeJenisIds}

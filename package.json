@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@geoman-io/leaflet-geoman-free": "^2.19.2",
+    "@mapbox/shp-write": "^0.4.3",
     "@supabase/supabase-js": "^2.101.1",
     "leaflet": "^1.9.4",
     "leaflet.markercluster": "^1.5.3",

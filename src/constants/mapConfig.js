@@ -24,8 +24,8 @@ export const TILE_LAYERS = {
 };
 
 export const KBAK_LEVELS = {
-    1: { color: "#16a34a", label: "Level 1 – Sebaran Batugamping", fillOpacity: 0.2 },
-    2: { color: "#ca8a04", label: "Level 2 – Hasil Penyelidikan", fillOpacity: 0.3 },
-    3: { color: "#ea580c", label: "Level 3 – Hasil Verifikasi", fillOpacity: 0.4 },
-    4: { color: "#dc2626", label: "Level 4 – Telah Ditetapkan", fillOpacity: 0.5 },
+    1: { color: "#73b2ff", label: "Level 1 – Sebaran Batugamping", fillOpacity: 0.2 },
+    2: { color: "#0071fe", label: "Level 2 – Hasil Penyelidikan", fillOpacity: 0.3 },
+    3: { color: "#005be7", label: "Level 3 – Hasil Verifikasi", fillOpacity: 0.4 },
+    4: { color: "#004da7", label: "Level 4 – Telah Ditetapkan", fillOpacity: 0.5 },
 };

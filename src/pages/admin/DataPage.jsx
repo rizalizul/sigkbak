@@ -142,7 +142,7 @@ export const DataPage = () => {
     const [selectedJenis, setSelectedJenis] = useState([]);
     const jenisIds = selectedJenis.length > 0 ? selectedJenis : jenisList.map((j) => j.id);
 
-    const { filtered, loading, searchQuery, setSearchQuery, deleteObjek, updateObjek } = useObjekSpasial(jenisIds);
+    const { filtered, loading, searchQuery, setSearchQuery, createObjek, deleteObjek, updateObjek } = useObjekSpasial(jenisIds);
     const [expandedId, setExpandedId] = useState(null);
     const [deletingId, setDeletingId] = useState(null);
     const [saving, setSaving] = useState(false);
@@ -185,7 +185,7 @@ export const DataPage = () => {
         setSaving(true);
         setError(null);
         if (mode === "add") {
-            const { error: err } = await supabase.from("objek_spasial").insert(payload);
+            const { error: err } = await createObjek(payload);
             if (err) setError(err.message);
             else setMode(null);
         } else {

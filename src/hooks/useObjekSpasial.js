@@ -31,15 +31,30 @@ export const useObjekSpasial = (activeJenisIds = []) => {
         return data.filter((d) => d.nama_objek?.toLowerCase().includes(q) || JSON.stringify(d.atribut)?.toLowerCase().includes(q));
     }, [data, searchQuery]);
 
-    const deleteObjek = async (id) => {
-        const { error } = await supabase.from("objek_spasial").delete().eq("id", id);
+    // Create Optimistic
+    const createObjek = async (payload) => {
+        const { data: newData, error } = await supabase.from("objek_spasial").insert(payload).select("*, jenis_objek(id, nama, warna, ikon)").single();
+        if (!error && newData) {
+            setData((prev) => [newData, ...prev]); // Langsung taruh di paling atas
+        }
         return { error };
     };
 
     const updateObjek = async (id, payload) => {
-        const { error } = await supabase.from("objek_spasial").update(payload).eq("id", id);
+        const { data: updatedData, error } = await supabase.from("objek_spasial").update(payload).eq("id", id).select("*, jenis_objek(id, nama, warna, ikon)").single();
+        if (!error && updatedData) {
+            setData((prev) => prev.map((item) => (item.id === id ? updatedData : item))); // Langsung update barisnya
+        }
         return { error };
     };
 
-    return { data, filtered, loading, searchQuery, setSearchQuery, deleteObjek, updateObjek };
+    const deleteObjek = async (id) => {
+        const { error } = await supabase.from("objek_spasial").delete().eq("id", id);
+        if (!error) {
+            setData((prev) => prev.filter((item) => item.id !== id)); // Langsung hilangkan dari layar
+        }
+        return { error };
+    };
+
+    return { data, filtered, loading, searchQuery, setSearchQuery, createObjek, deleteObjek, updateObjek };
 };

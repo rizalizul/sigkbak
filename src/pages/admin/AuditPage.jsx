@@ -7,6 +7,11 @@ const ActionBadge = ({ action }) => {
         INSERT: "bg-green-100 text-green-700",
         UPDATE: "bg-blue-100 text-blue-700",
         DELETE: "bg-rose-100 text-rose-700",
+        REGISTER: "bg-purple-100 text-purple-700",
+        LOGIN: "bg-teal-100 text-teal-700",
+        LOGOUT: "bg-amber-100 text-amber-700",
+        DEACTIVATE: "bg-slate-700 text-white",
+        ACTIVATE: "bg-emerald-100 text-emerald-800",
     };
     return (
         <span className={`text-xs font-semibold px-2 py-0.5 rounded-lg ${map[action] || "bg-slate-100 text-slate-600"}`}>
@@ -22,7 +27,7 @@ const TableBadge = ({ name }) => (
 export const AuditPage = () => {
     const [logs,    setLogs]    = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filter,  setFilter]  = useState("all"); // all | INSERT | UPDATE | DELETE
+    const [filter,  setFilter]  = useState("all"); 
     const [page,    setPage]    = useState(0);
     const PAGE_SIZE = 30;
 
@@ -47,6 +52,8 @@ export const AuditPage = () => {
         const d = new Date(str);
         return d.toLocaleString("id-ID", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
     };
+    // Daftar filter yang diperluas
+    const filterOptions = ["all", "INSERT", "UPDATE", "DELETE", "LOGIN", "LOGOUT", "REGISTER"];
 
     return (
         <div className="space-y-5">
@@ -64,7 +71,7 @@ export const AuditPage = () => {
             {/* Filter */}
             <div className="flex items-center gap-2 flex-wrap">
                 <Filter size={13} className="text-slate-400" />
-                {["all", "INSERT", "UPDATE", "DELETE"].map((f) => (
+                {filterOptions.map((f) => (
                     <button key={f} onClick={() => { setFilter(f); setPage(0); }}
                         className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-all ${filter === f ? "bg-slate-900 text-white border-slate-900" : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"}`}>
                         {f === "all" ? "Semua" : f}

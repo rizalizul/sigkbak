@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Map, Loader2, Eye, EyeOff, CheckCircle } from "lucide-react";
 
 export const RegisterPage = () => {
+    const [fullName, setFullName] = useState(""); 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirm, setConfirm] = useState("");
@@ -18,7 +19,18 @@ export const RegisterPage = () => {
         if (password !== confirm) return setError("Password tidak sama.");
         if (password.length < 6) return setError("Password minimal 6 karakter.");
         setLoading(true);
-        const { error: err } = await supabase.auth.signUp({ email, password });
+        
+        // 2. Modifikasi fungsi signUp untuk mengirim metadata (full_name)
+        const { error: err } = await supabase.auth.signUp({ 
+            email, 
+            password,
+            options: {
+                data: {
+                    full_name: fullName,
+                }
+            }
+        });
+        
         if (err) setError(err.message);
         else setSuccess(true);
         setLoading(false);
@@ -53,6 +65,19 @@ export const RegisterPage = () => {
                 <div className="bg-white rounded-2xl shadow-2xl p-8">
                     <form onSubmit={handleRegister} className="space-y-5">
                         {error && <div className="bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-xl px-4 py-3">{error}</div>}
+                        
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1.5">Nama Lengkap</label>
+                            <input
+                                type="text"
+                                value={fullName}
+                                onChange={(e) => setFullName(e.target.value)}
+                                required
+                                placeholder="Masukkan nama lengkap"
+                                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 transition-all"
+                            />
+                        </div>
+
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
                             <input

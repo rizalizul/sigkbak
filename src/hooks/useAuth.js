@@ -7,6 +7,9 @@ export const useAuth = () => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const timerRef = useRef(null);
+    
+    // Tambahan: Ref untuk membatasi eksekusi event (Throttling)
+    const throttleRef = useRef(null); 
 
     const logout = useCallback(async () => {
         clearTimeout(timerRef.current);
@@ -24,12 +27,29 @@ export const useAuth = () => {
 
     // Track aktivitas user
     useEffect(() => {
-        const events = ["mousedown", "mousemove", "keydown", "scroll", "touchstart", "click"];
+        // Jika belum login, tidak perlu pasang event listener (menghemat memori)
+        if (!user) return; 
+
+        const events = ["mousedown", "mousemove", "keydown", "scroll", "touchstart"];
+        
         const handler = () => {
-            if (user) resetTimer();
+            // Jika tidak ada antrean throttle, jalankan reset
+            if (!throttleRef.current) {
+                resetTimer();
+                
+                // Kunci event selama 5 detik ke depan (agar tidak over-render)
+                throttleRef.current = setTimeout(() => {
+                    throttleRef.current = null;
+                }, 5000); 
+            }
         };
+
         events.forEach((e) => window.addEventListener(e, handler, { passive: true }));
-        return () => events.forEach((e) => window.removeEventListener(e, handler));
+        
+        return () => {
+            events.forEach((e) => window.removeEventListener(e, handler));
+            if (throttleRef.current) clearTimeout(throttleRef.current);
+        };
     }, [user, resetTimer]);
 
     useEffect(() => {

@@ -90,7 +90,7 @@ export const usePreview = () => {
             setItems((prev) => prev.map((i) => (i._id === id ? { ...i, _status: "saving" } : i)));
             const item = items.find((i) => i._id === id);
             if (!item) return;
-            const { _id, _status, _jenisId, ...data } = item;
+            const { _id, _status, _jenisId, error: itemError, ...data } = item;
             const { error } = await supabase.from("objek_spasial").insert({ ...data, jenis_id: _jenisId });
             setItems((prev) => prev.map((i) => (i._id === id ? { ...i, _status: error ? "error" : "saved" } : i)));
         },
@@ -102,7 +102,7 @@ export const usePreview = () => {
         const pending = items.filter((i) => i._status === "pending");
         for (const item of pending) {
             setItems((prev) => prev.map((i) => (i._id === item._id ? { ...i, _status: "saving" } : i)));
-            const { _id, _status, _jenisId, ...data } = item;
+            const { _id, _status, _jenisId, error: itemError, ...data } = item;
             const { error } = await supabase.from("objek_spasial").insert({ ...data, jenis_id: _jenisId });
             setItems((prev) => prev.map((i) => (i._id === item._id ? { ...i, _status: error ? "error" : "saved" } : i)));
         }

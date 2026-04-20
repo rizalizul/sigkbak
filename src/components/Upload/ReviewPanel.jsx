@@ -89,7 +89,6 @@ const InlineEditForm = ({ item, onSave, onCancel }) => {
 
     const hasCoords = !isNaN(parseFloat(x)) && !isNaN(parseFloat(y));
 
-    // Saat marker digeser atau peta diklik → update input koordinat
     const handleMapMove = (newLat, newLng) => {
         setY(newLat.toFixed(8));
         setX(newLng.toFixed(8));
@@ -102,6 +101,7 @@ const InlineEditForm = ({ item, onSave, onCancel }) => {
             koordinat_x: parseFloat(x) || null,
             koordinat_y: parseFloat(y) || null,
             atribut,
+            error: null,
         });
     };
 
@@ -192,12 +192,16 @@ const ReviewItem = ({ item, onSave, onDiscard, onUpdate, duplicates }) => {
         onUpdate(item._id, updated);
         setEditing(false);
     };
+    
+    // 🌟 Deteksi status untuk UI
+    const hasError = !!item.error; 
     const hasDuplicate = duplicates && duplicates.length > 0;
 
     return (
-        <div className={`border rounded-xl overflow-hidden mb-2 transition-opacity ${item._status === "saved" ? "opacity-40" : ""} ${hasDuplicate && item._status === "pending" ? "border-amber-300" : "border-slate-200"}`}>
+        <div className={`border rounded-xl overflow-hidden mb-2 transition-opacity ${item._status === "saved" ? "opacity-40" : ""} ${hasError ? "border-rose-300 shadow-sm shadow-rose-100" : hasDuplicate && item._status === "pending" ? "border-amber-300" : "border-slate-200"}`}>
+            
             {/* Header */}
-            <div className={`flex items-center gap-2 px-3 py-2.5 ${hasDuplicate && item._status === "pending" ? "bg-amber-50" : "bg-slate-50"}`}>
+            <div className={`flex items-center gap-2 px-3 py-2.5 ${hasError ? "bg-rose-50/50" : hasDuplicate && item._status === "pending" ? "bg-amber-50" : "bg-slate-50"}`}>
                 <div
                     className="flex-1 min-w-0 cursor-pointer"
                     onClick={() => {
@@ -206,19 +210,31 @@ const ReviewItem = ({ item, onSave, onDiscard, onUpdate, duplicates }) => {
                     }}
                 >
                     <div className="flex items-center gap-1.5">
-                        <p className="text-sm font-medium text-slate-800 truncate">{item.nama_objek || "Tanpa Nama"}</p>
-                        {hasDuplicate && item._status === "pending" && <AlertTriangle size={13} className="text-amber-500 flex-shrink-0" />}
+                        <p className={`text-sm font-medium truncate ${hasError ? "text-rose-900" : "text-slate-800"}`}>
+                            {item.nama_objek || "Tanpa Nama"}
+                        </p>
+                        
+                        {/* Tampilkan Ikon sesuai masalah */}
+                        {hasError ? (
+                            <AlertTriangle size={13} className="text-rose-500 flex-shrink-0" />
+                        ) : hasDuplicate && item._status === "pending" ? (
+                            <AlertTriangle size={13} className="text-amber-500 flex-shrink-0" />
+                        ) : null}
                     </div>
-                    <p className="text-xs text-slate-400">{item.koordinat_x && item.koordinat_y ? `${parseFloat(item.koordinat_y).toFixed(5)}, ${parseFloat(item.koordinat_x).toFixed(5)}` : "Koordinat tidak tersedia"}</p>
+                    <p className={`text-xs ${hasError ? "text-rose-400" : "text-slate-400"}`}>
+                        {item.koordinat_x && item.koordinat_y ? `${parseFloat(item.koordinat_y).toFixed(5)}, ${parseFloat(item.koordinat_x).toFixed(5)}` : "Koordinat tidak tersedia"}
+                    </p>
                 </div>
+                
                 <StatusBadge status={item._status} />
+                
                 {item._status === "pending" && (
                     <button
                         onClick={() => {
                             setEditing((p) => !p);
                             setExpanded(false);
                         }}
-                        className="w-6 h-6 flex items-center justify-center rounded-lg text-slate-400 hover:bg-blue-100 hover:text-blue-600 transition-colors ml-1"
+                        className={`w-6 h-6 flex items-center justify-center rounded-lg transition-colors ml-1 ${hasError ? "text-rose-500 hover:bg-rose-100" : "text-slate-400 hover:bg-blue-100 hover:text-blue-600"}`}
                     >
                         <Pencil size={12} />
                     </button>
@@ -228,14 +244,28 @@ const ReviewItem = ({ item, onSave, onDiscard, onUpdate, duplicates }) => {
                         setExpanded((p) => !p);
                         setEditing(false);
                     }}
-                    className="text-slate-400 ml-1"
+                    className={`ml-1 ${hasError ? "text-rose-400" : "text-slate-400"}`}
                 >
                     {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                 </button>
             </div>
 
-            {/* Duplicate warning */}
-            {hasDuplicate && item._status === "pending" && !editing && <DuplicateWarning matches={duplicates} />}
+            {/* 🌟 Peringatan Eror Konversi UTM */}
+            {hasError && !editing && (
+                <div className="px-3 py-2 bg-rose-50 border-t border-rose-200">
+                    <div className="flex items-start gap-2">
+                        <AlertTriangle size={13} className="text-rose-600 flex-shrink-0 mt-0.5" />
+                        <div>
+                            <p className="text-xs font-semibold text-rose-800">Masalah Konversi Koordinat!</p>
+                            <p className="text-xs text-rose-600 mt-0.5">{item.error}</p>
+                            <p className="text-[10px] text-rose-500 mt-1">Klik ikon pensil di atas untuk mengisi koordinat secara manual.</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Peringatan Duplikat */}
+            {hasDuplicate && item._status === "pending" && !hasError && !editing && <DuplicateWarning matches={duplicates} />}
 
             {/* Expanded detail */}
             {expanded && !editing && atributEntries.length > 0 && (
@@ -255,7 +285,7 @@ const ReviewItem = ({ item, onSave, onDiscard, onUpdate, duplicates }) => {
             {/* Actions */}
             {item._status === "pending" && !editing && (
                 <div className="flex gap-1.5 px-3 py-2 border-t border-slate-100 bg-white">
-                    <button onClick={() => onSave(item._id)} className="flex-1 flex items-center justify-center gap-1 py-1.5 bg-slate-800 text-white rounded-lg text-xs font-medium hover:bg-slate-700 transition-colors">
+                    <button onClick={() => onSave(item._id)} className={`flex-1 flex items-center justify-center gap-1 py-1.5 text-white rounded-lg text-xs font-medium transition-colors ${hasError ? "bg-slate-300 cursor-not-allowed" : "bg-slate-800 hover:bg-slate-700"}`} disabled={hasError}>
                         <Save size={11} /> Simpan
                     </button>
                     <button
@@ -266,6 +296,7 @@ const ReviewItem = ({ item, onSave, onDiscard, onUpdate, duplicates }) => {
                     </button>
                 </div>
             )}
+            
             {item._status === "saving" && (
                 <div className="flex items-center justify-center gap-2 px-3 py-2 border-t border-slate-100 text-xs text-blue-600">
                     <Loader2 size={11} className="animate-spin" /> Menyimpan...
@@ -280,6 +311,9 @@ export const ReviewPanel = ({ items, onSave, onDiscard, onSaveAll, onDiscardAll,
     const saved = items.filter((i) => i._status === "saved").length;
     const error = items.filter((i) => i._status === "error").length;
     const dupCount = Object.keys(duplicateMap).length;
+    
+    // 🌟 Hitung total objek yang gagal di-parsing/konversi
+    const parseErrorCount = items.filter((i) => !!i.error && i._status === "pending").length;
 
     return (
         <div className="space-y-4">
@@ -295,7 +329,7 @@ export const ReviewPanel = ({ items, onSave, onDiscard, onSaveAll, onDiscardAll,
                 </div>
                 <div className="bg-rose-50 rounded-xl p-3 text-center">
                     <p className="text-lg font-bold text-rose-700">{error}</p>
-                    <p className="text-xs text-rose-600">Error</p>
+                    <p className="text-xs text-rose-600">Gagal Server</p>
                 </div>
                 <div className="bg-orange-50 rounded-xl p-3 text-center">
                     <p className="text-lg font-bold text-orange-700">{dupCount}</p>
@@ -303,7 +337,23 @@ export const ReviewPanel = ({ items, onSave, onDiscard, onSaveAll, onDiscardAll,
                 </div>
             </div>
 
-            {dupCount > 0 && (
+            {/* 🌟 Global Warning untuk Parse Error UTM */}
+            {parseErrorCount > 0 && (
+                <div className="bg-rose-50 border border-rose-200 rounded-xl px-4 py-3 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center flex-shrink-0">
+                        <AlertTriangle size={16} className="text-rose-600" />
+                    </div>
+                    <div>
+                        <p className="text-sm font-semibold text-rose-800">Aksi Diperlukan</p>
+                        <p className="text-xs text-rose-700 mt-0.5">
+                            Terdapat <b>{parseErrorCount} data</b> yang koordinatnya gagal terbaca. Silakan perbaiki manual (klik ikon pensil) sebelum menyimpan ke database.
+                        </p>
+                    </div>
+                </div>
+            )}
+
+            {/* Warning Duplikat */}
+            {dupCount > 0 && parseErrorCount === 0 && (
                 <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center gap-2">
                     <AlertTriangle size={15} className="text-amber-600 flex-shrink-0" />
                     <p className="text-xs text-amber-700">
@@ -317,8 +367,9 @@ export const ReviewPanel = ({ items, onSave, onDiscard, onSaveAll, onDiscardAll,
                 {pending > 0 && (
                     <button
                         onClick={onSaveAll}
-                        disabled={savingAll}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-slate-900 text-white rounded-xl text-xs font-medium hover:bg-slate-700 transition-colors disabled:opacity-60"
+                        disabled={savingAll || parseErrorCount > 0} 
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-slate-900 text-white rounded-xl text-xs font-medium hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={parseErrorCount > 0 ? "Selesaikan semua eror koordinat terlebih dahulu" : "Simpan Semua"}
                     >
                         {savingAll ? <Loader2 size={12} className="animate-spin" /> : <CheckCheck size={12} />}
                         Simpan Semua ({pending})

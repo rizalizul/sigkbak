@@ -90,7 +90,7 @@ export const ExportPage = () => {
         setExporting(null);
     };
 
-    // 🌟 FUNGSI BARU: Export ke Shapefile (.zip)
+    // FUNGSI BARU: Export ke Shapefile (.zip)
     const exportShapefile = async () => {
         setExporting("shp");
         setError(null);
@@ -104,7 +104,7 @@ export const ExportPage = () => {
                         type: "Feature",
                         geometry: { type: "Point", coordinates: [r.koordinat_x, r.koordinat_y] },
                         properties: { 
-                            id: String(r.id), // Pastikan ID jadi string agar aman di DBF
+                            id: String(r.id),
                             nama: r.nama_objek || "Tanpa Nama", 
                             jenis: r.jenis_objek?.nama || "", 
                             ...r.atribut 
@@ -112,23 +112,48 @@ export const ExportPage = () => {
                     })),
             };
 
-            // Dynamic import agar halaman tidak berat saat dimuat pertama kali
             const shpwrite = await import("@mapbox/shp-write");
             
-            // shp-write akan otomatis mendownload file .zip berisi SHP, DBF, SHX, PRJ
-            shpwrite.download(geojson, {
+            // 1. Dapatkan hasil racikan ZIP (biasanya berupa teks Base64)
+            const zipContent = await shpwrite.zip(geojson, {
                 folder: 'sigkbak_shapefile',
                 types: { point: 'sigkbak_points' }
             });
 
+            // 2. Terjemahkan Teks Base64 menjadi Biner Murni (Uint8Array)
+            let blob;
+            if (typeof zipContent === "string") {
+                // Proses decoding base64 ke biner
+                const byteCharacters = atob(zipContent);
+                const byteNumbers = new Array(byteCharacters.length);
+                for (let i = 0; i < byteCharacters.length; i++) {
+                    byteNumbers[i] = byteCharacters.charCodeAt(i);
+                }
+                const byteArray = new Uint8Array(byteNumbers);
+                blob = new Blob([byteArray], { type: "application/zip" });
+            } else {
+                // Jaga-jaga jika library tiba-tiba mengembalikan ArrayBuffer
+                blob = new Blob([zipContent], { type: "application/zip" });
+            }
+            
+            // 3. Eksekusi unduhan biner
+            const a = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            a.href = url;
+            a.download = `sigkbak_shapefile_${Date.now()}.zip`;
+            document.body.appendChild(a); 
+            a.click();
+            document.body.removeChild(a); 
+            URL.revokeObjectURL(url);
+
         } catch (err) {
-            console.error(err);
+            console.error("Error shapefile:", err);
             setError("Gagal mengexport Shapefile. Pastikan data tidak kosong.");
         }
         setExporting(null);
     };
 
-    // 🌟 Tambahkan Shapefile ke dalam daftar format
+    // Tambahkan Shapefile ke dalam daftar format
     const exportFormats = [
         { key: "xlsx", label: "Excel (.xlsx)", desc: "Tabel lengkap dengan semua atribut", icon: FileSpreadsheet, color: "text-green-600 bg-green-50", action: exportExcel },
         { key: "shp", label: "Shapefile (.shp)", desc: "Format GIS (dikompres dalam .zip)", icon: Archive, color: "text-purple-600 bg-purple-50", action: exportShapefile },

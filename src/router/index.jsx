@@ -10,6 +10,7 @@ import { JenisPage }      from "../pages/admin/JenisPage";
 import { ExportPage }     from "../pages/admin/ExportPage";
 import { AuditPage }      from "../pages/admin/AuditPage";
 import { UsersPage }      from "../pages/admin/UsersPage";
+import { ChangePasswordPage } from "../pages/admin/ChangePasswordPage"; 
 
 export const router = createBrowserRouter([
     { path: "/",         element: <PublicMapPage /> },
@@ -27,6 +28,7 @@ export const router = createBrowserRouter([
             { path: "export",    element: <ExportPage /> },
             { path: "audit",     element: <AuditPage /> },
             { path: "users",     element: <UsersPage /> },
+            { path: "change-password", element: <ChangePasswordPage /> }, 
         ],
     },
 ]);

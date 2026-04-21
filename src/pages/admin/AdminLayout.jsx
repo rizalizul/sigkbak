@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { supabase } from "../../lib/supabase";
-import { Map, LayoutDashboard, Upload, Table2, Layers, Download, LogOut, Menu, X, ClipboardList, Users, ChevronDown } from "lucide-react";
+import { Map, LayoutDashboard, Upload, Table2, Layers, Download, LogOut, Menu, X, ClipboardList, Users, ChevronDown, Lock } from "lucide-react";
 
 const navItems = [
     { to: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
@@ -142,6 +142,12 @@ export const AdminLayout = () => {
                                     <p className="text-sm font-semibold text-slate-700 truncate">{displayName}</p>
                                     <p className="text-xs text-slate-500 truncate">{user.email}</p>
                                 </div>
+                                <NavLink to="/admin/change-password"
+                                    onClick={() => setShowDropdown(false)}
+                                    className="flex items-center gap-2.5 px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 transition-colors border-b border-slate-100">
+                                    <Lock size={15} />
+                                    Ganti Password
+                                </NavLink>
                                 <NavLink to="/" target="_blank"
                                     onClick={() => setShowDropdown(false)}
                                     className="flex items-center gap-2.5 px-4 py-3 text-sm text-slate-600 hover:bg-slate-50 transition-colors">

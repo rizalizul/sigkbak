@@ -141,9 +141,20 @@ export const JenisPage = () => {
     };
 
     const handleDelete = async (jenis) => {
-        if (!confirm(`Hapus jenis "${jenis.nama}"? Semua objek dengan jenis ini akan kehilangan referensi.`)) return;
+        // Konfirmasi awal
+        if (!confirm(`Apakah Anda yakin ingin menghapus jenis "${jenis.nama}"?`)) return;
+        
         const { error: err } = await deleteJenis(jenis.id);
-        if (err) alert(err.message);
+        
+        if (err) {
+            // Tangkap error spesifik dari RESTRICT Foreign Key
+            if (err.message.includes("violates foreign key constraint") || err.code === "23503") {
+                alert(`⚠️ GAGAL MENGHAPUS!\n\nJenis objek "${jenis.nama}" tidak bisa dihapus karena masih ada data spasial yang menggunakannya.\n\nSilakan pindahkan atau hapus data-data tersebut di menu 'Kelola Data' terlebih dahulu.`);
+            } else {
+                // Tampilkan error lain jika ada
+                alert("Terjadi kesalahan: " + err.message);
+            }
+        }
     };
 
     return (

@@ -5,7 +5,7 @@ import { useObjekSpasial } from "../../hooks/useObjekSpasial";
 import { supabase } from "../../lib/supabase";
 import { AtributEditor } from "../../components/UI/AtributEditor";
 import { MapPickerModal } from "../../components/UI/MapPickerModal";
-import { Search, Trash2, ChevronDown, ChevronUp, Filter, Loader2, Plus, Pencil, X, Save, MapPin } from "lucide-react";
+import { Search, Trash2, ChevronDown, ChevronUp, Filter, Loader2, Plus, Pencil, X, Save, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
 
 const ObjekForm = ({ initial = {}, jenisList, onSave, onCancel, saving }) => {
     const [form, setForm] = useState({
@@ -21,10 +21,7 @@ const ObjekForm = ({ initial = {}, jenisList, onSave, onCancel, saving }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        // Validasi AtributEditor sebelum simpan
-        if (atributEditorRef.current && !atributEditorRef.current.validate()) {
-            return; // Ada field kosong, hentikan submit
-        }
+        if (atributEditorRef.current && !atributEditorRef.current.validate()) return;
         onSave({
             ...form,
             koordinat_x: parseFloat(form.koordinat_x) || null,
@@ -69,25 +66,11 @@ const ObjekForm = ({ initial = {}, jenisList, onSave, onCancel, saving }) => {
                     <div className="grid grid-cols-2 gap-2">
                         <div>
                             <label className="block text-xs text-slate-400 mb-1">Longitude (X)</label>
-                            <input
-                                type="number"
-                                step="any"
-                                value={form.koordinat_x}
-                                onChange={(e) => set("koordinat_x", e.target.value)}
-                                placeholder="109.xxxx"
-                                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800"
-                            />
+                            <input type="number" step="any" value={form.koordinat_x} onChange={(e) => set("koordinat_x", e.target.value)} placeholder="109.xxxx" className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800" />
                         </div>
                         <div>
                             <label className="block text-xs text-slate-400 mb-1">Latitude (Y)</label>
-                            <input
-                                type="number"
-                                step="any"
-                                value={form.koordinat_y}
-                                onChange={(e) => set("koordinat_y", e.target.value)}
-                                placeholder="-7.xxxx"
-                                className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800"
-                            />
+                            <input type="number" step="any" value={form.koordinat_y} onChange={(e) => set("koordinat_y", e.target.value)} placeholder="-7.xxxx" className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800" />
                         </div>
                     </div>
                 </div>
@@ -101,21 +84,9 @@ const ObjekForm = ({ initial = {}, jenisList, onSave, onCancel, saving }) => {
                 </div>
 
                 <div className="flex gap-2">
-                    <button type="button" onClick={onCancel} className="flex-1 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors">
-                        Batal
-                    </button>
+                    <button type="button" onClick={onCancel} className="flex-1 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors">Batal</button>
                     <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-slate-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
-                        {saving ? (
-                            <>
-                                <Loader2 size={14} className="animate-spin" />
-                                Menyimpan...
-                            </>
-                        ) : (
-                            <>
-                                <Save size={14} />
-                                Simpan
-                            </>
-                        )}
+                        {saving ? <><Loader2 size={14} className="animate-spin" /> Menyimpan...</> : <><Save size={14} /> Simpan</>}
                     </button>
                 </div>
             </form>
@@ -143,25 +114,39 @@ export const DataPage = () => {
     const jenisIds = selectedJenis.length > 0 ? selectedJenis : jenisList.map((j) => j.id);
 
     const { filtered, loading, searchQuery, setSearchQuery, createObjek, deleteObjek, updateObjek } = useObjekSpasial(jenisIds);
+    
+    // --- STATE PAGINATION & BULK DELETE ---
+    const [currentPage, setCurrentPage] = useState(1);
+    const [selectedIds, setSelectedIds] = useState([]);
+    const [isDeletingBulk, setIsDeletingBulk] = useState(false);
+    const ITEMS_PER_PAGE = 100;
+
     const [expandedId, setExpandedId] = useState(null);
     const [deletingId, setDeletingId] = useState(null);
     const [saving, setSaving] = useState(false);
     const [mode, setMode] = useState(null);
-    const [formKey, setFormKey] = useState(0); // force re-render form
+    const [formKey, setFormKey] = useState(0);
+    const [error, setError] = useState(null);
     const formRef = useRef(null);
+
+    // Reset pagination dan seleksi jika melakukan pencarian atau filter
+    useEffect(() => {
+        setCurrentPage(1);
+        setSelectedIds([]);
+    }, [searchQuery, selectedJenis]);
+
+    // Kalkulasi Data Pagination
+    const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const paginatedData = filtered.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
     const openEdit = (obj) => {
         setMode(obj);
-        setFormKey((k) => k + 1); // reset form
+        setFormKey((k) => k + 1);
         setExpandedId(null);
-        // Scroll ke form
-        setTimeout(() => {
-            formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-        }, 50);
+        setTimeout(() => { formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }, 50);
     };
-    const [error, setError] = useState(null);
 
-    // Auto-buka form edit jika ada query param ?edit=ID
     useEffect(() => {
         const editId = searchParams.get("edit");
         if (editId && filtered.length > 0) {
@@ -179,6 +164,19 @@ export const DataPage = () => {
         const { error: err } = await deleteObjek(id);
         if (err) alert(err.message);
         setDeletingId(null);
+        setSelectedIds(prev => prev.filter(selectedId => selectedId !== id));
+    };
+
+    // Hapus Massal (Bulk Delete)
+    const handleBulkDelete = async () => {
+        if (!confirm(`YAKIN INGIN MENGHAPUS ${selectedIds.length} OBJEK SEKALIGUS?\nTindakan ini tidak dapat dibatalkan.`)) return;
+        setIsDeletingBulk(true);
+        // Loop penghapusan satu per satu
+        for (const id of selectedIds) {
+            await deleteObjek(id);
+        }
+        setSelectedIds([]);
+        setIsDeletingBulk(false);
     };
 
     const handleSave = async (payload) => {
@@ -197,6 +195,26 @@ export const DataPage = () => {
     };
 
     const toggleJenisFilter = (id) => setSelectedJenis((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+
+    // Fungsi Centang Checkbox
+    const handleSelectAll = (e) => {
+        if (e.target.checked) {
+            const currentIds = paginatedData.map(obj => obj.id);
+            setSelectedIds(prev => [...new Set([...prev, ...currentIds])]);
+        } else {
+            const currentIds = paginatedData.map(obj => obj.id);
+            setSelectedIds(prev => prev.filter(id => !currentIds.includes(id)));
+        }
+    };
+
+    const handleSelectOne = (e, id) => {
+        e.stopPropagation();
+        if (e.target.checked) setSelectedIds(prev => [...prev, id]);
+        else setSelectedIds(prev => prev.filter(item => item !== id));
+    };
+
+    // Mengecek apakah semua item di halaman ini terpilih
+    const isAllCurrentPageSelected = paginatedData.length > 0 && paginatedData.every(obj => selectedIds.includes(obj.id));
 
     return (
         <div className="space-y-5">
@@ -254,31 +272,77 @@ export const DataPage = () => {
                         );
                     })}
                     {selectedJenis.length > 0 && (
-                        <button onClick={() => setSelectedJenis([])} className="text-xs text-rose-500 hover:text-rose-700 font-medium">
-                            Reset
-                        </button>
+                        <button onClick={() => setSelectedJenis([])} className="text-xs text-rose-500 hover:text-rose-700 font-medium">Reset</button>
                     )}
                 </div>
             </div>
 
             {/* Tabel */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                <div className="px-5 py-3 border-b border-slate-100">
-                    <span className="text-sm font-semibold text-slate-700">{loading ? "Memuat..." : `${filtered.length.toLocaleString()} objek`}</span>
+                {/* Header Dinamis: Normal vs Mode Bulk Delete */}
+                <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                    {selectedIds.length > 0 ? (
+                        <div className="flex items-center gap-3 w-full">
+                            <input 
+                                type="checkbox" 
+                                checked={isAllCurrentPageSelected}
+                                onChange={handleSelectAll} 
+                                className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+                            />
+                            <span className="text-sm font-semibold text-slate-700">{selectedIds.length} objek dipilih</span>
+                            <div className="flex-1"></div>
+                            <button 
+                                onClick={handleBulkDelete}
+                                disabled={isDeletingBulk}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-rose-100 text-rose-700 rounded-lg text-xs font-semibold hover:bg-rose-200 transition-colors disabled:opacity-50"
+                            >
+                                {isDeletingBulk ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                                Hapus Terpilih
+                            </button>
+                            <button onClick={() => setSelectedIds([])} className="text-xs text-slate-500 hover:text-slate-800 font-medium">Batal</button>
+                        </div>
+                    ) : (
+                        <div className="flex items-center gap-3 w-full">
+                            <input 
+                                type="checkbox" 
+                                checked={isAllCurrentPageSelected}
+                                onChange={handleSelectAll} 
+                                className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+                            />
+                            <span className="text-sm font-semibold text-slate-700">
+                                {loading ? "Memuat..." : `Menampilkan ${filtered.length > 0 ? startIndex + 1 : 0} - ${Math.min(startIndex + ITEMS_PER_PAGE, filtered.length)} dari total ${filtered.length.toLocaleString()} objek`}
+                            </span>
+                        </div>
+                    )}
                 </div>
+
                 {loading ? (
                     <div className="flex items-center justify-center py-16 gap-2 text-slate-400">
                         <Loader2 size={18} className="animate-spin" /> Memuat data...
                     </div>
-                ) : filtered.length === 0 ? (
+                ) : paginatedData.length === 0 ? (
                     <div className="text-center py-16 text-slate-400 text-sm">Tidak ada data ditemukan.</div>
                 ) : (
                     <div className="divide-y divide-slate-50">
-                        {filtered.map((obj) => (
+                        {paginatedData.map((obj) => (
                             <div key={obj.id}>
                                 <div className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => setExpandedId(expandedId === obj.id ? null : obj.id)}>
-                                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0 border-2 border-white shadow-sm" style={{ backgroundColor: obj.jenis_objek?.warna || "#6b7280" }}>
-                                        {obj.jenis_objek?.ikon || "📍"}
+                                    {/* Checkbox Individual */}
+                                    <input 
+                                        type="checkbox" 
+                                        checked={selectedIds.includes(obj.id)}
+                                        onChange={(e) => handleSelectOne(e, obj.id)}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+                                    />
+                                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0 border-2 border-white shadow-sm bg-white">
+                                        {obj.jenis_objek?.ikon ? (
+                                            obj.jenis_objek.ikon.endsWith('.svg') || obj.jenis_objek.ikon.endsWith('.png') ? (
+                                                <img src={`/icons/${obj.jenis_objek.ikon}`} alt="ikon" className="w-4 h-4 object-contain" />
+                                            ) : (
+                                                <span style={{ backgroundColor: obj.jenis_objek?.warna || "#6b7280" }} className="w-full h-full rounded-full flex items-center justify-center">{obj.jenis_objek.ikon}</span>
+                                            )
+                                        ) : "📍"}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-medium text-slate-800 truncate">{obj.nama_objek || "Tanpa Nama"}</p>
@@ -288,20 +352,14 @@ export const DataPage = () => {
                                     </div>
                                     <div className="flex items-center gap-1.5">
                                         <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                openEdit(obj);
-                                            }}
+                                            onClick={(e) => { e.stopPropagation(); openEdit(obj); }}
                                             className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:bg-blue-50 hover:text-blue-500 transition-colors"
                                         >
                                             <Pencil size={13} />
                                         </button>
                                         <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleDelete(obj.id, obj.nama_objek);
-                                            }}
-                                            disabled={deletingId === obj.id}
+                                            onClick={(e) => { e.stopPropagation(); handleDelete(obj.id, obj.nama_objek); }}
+                                            disabled={deletingId === obj.id || isDeletingBulk}
                                             className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:bg-rose-50 hover:text-rose-500 transition-colors"
                                         >
                                             {deletingId === obj.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
@@ -310,7 +368,7 @@ export const DataPage = () => {
                                     </div>
                                 </div>
                                 {expandedId === obj.id && (
-                                    <div className="px-5 pb-4 bg-slate-50 border-t border-slate-100">
+                                    <div className="px-5 pb-4 bg-slate-50 border-t border-slate-100 ml-7">
                                         <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 pt-3">
                                             {obj.koordinat_x && (
                                                 <div className="col-span-2">
@@ -334,6 +392,29 @@ export const DataPage = () => {
                                 )}
                             </div>
                         ))}
+                    </div>
+                )}
+                
+                {/* PAGINATION CONTROLS */}
+                {totalPages > 1 && (
+                    <div className="px-5 py-3 border-t border-slate-100 flex items-center justify-between bg-white">
+                        <span className="text-xs text-slate-500 font-medium">Halaman {currentPage} dari {totalPages}</span>
+                        <div className="flex items-center gap-2">
+                            <button 
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+                            >
+                                <ChevronLeft size={16} />
+                            </button>
+                            <button 
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+                            >
+                                <ChevronRight size={16} />
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>

@@ -32,6 +32,12 @@ const JenisForm = ({ initial = {}, onSave, onCancel, loading }) => {
             return;
         }
 
+        if (file.size > 512000) {
+            alert("Gagal: Ukuran file terlalu besar! Maksimal ukuran ikon adalah 500 KB.");
+            e.target.value = '';
+            return;
+        }
+
         setUploading(true);
         const fileExt = file.name.split('.').pop();
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;

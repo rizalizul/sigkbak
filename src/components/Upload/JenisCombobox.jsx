@@ -31,6 +31,24 @@ export const JenisCombobox = ({ jenisList, value, onChange, onCreateNew }) => {
         setOpen(false);
     };
 
+    // Fungsi kecil untuk merender ikon (Hybrid)
+    const renderIkon = (ikon, warna) => {
+        const isImage = ikon?.startsWith("http") || ikon?.includes("/");
+        const isTransparent = warna === "transparent";
+        return (
+            <div 
+                className={`w-5 h-5 flex items-center justify-center flex-shrink-0 ${isTransparent ? "" : "rounded-full shadow-sm"}`} 
+                style={{ backgroundColor: isTransparent ? "transparent" : warna }}
+            >
+                {isImage ? (
+                    <img src={ikon} alt="ikon" className={`w-full h-full object-contain p-0.5 ${isTransparent ? 'drop-shadow-sm' : ''}`} />
+                ) : (
+                    <span className={`text-xs ${isTransparent ? 'drop-shadow-sm' : ''}`}>{ikon}</span>
+                )}
+            </div>
+        );
+    };
+
     return (
         <div ref={ref} className="relative">
             <button
@@ -40,8 +58,8 @@ export const JenisCombobox = ({ jenisList, value, onChange, onCreateNew }) => {
             >
                 {selected ? (
                     <span className="flex items-center gap-2">
-                        <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: selected.warna }} />
-                        {selected.ikon} {selected.nama}
+                        {renderIkon(selected.ikon, selected.warna)}
+                        <span className="font-medium text-slate-700">{selected.nama}</span>
                     </span>
                 ) : (
                     <span className="text-slate-400">Pilih atau buat jenis baru...</span>
@@ -57,8 +75,7 @@ export const JenisCombobox = ({ jenisList, value, onChange, onCreateNew }) => {
                     <div className="max-h-48 overflow-y-auto">
                         {filtered.map((j) => (
                             <button key={j.id} type="button" onClick={() => handleSelect(j)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors text-left">
-                                <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: j.warna }} />
-                                <span>{j.ikon}</span>
+                                {renderIkon(j.ikon, j.warna)}
                                 <span className="text-slate-700">{j.nama}</span>
                             </button>
                         ))}

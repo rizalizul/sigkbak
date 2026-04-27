@@ -87,8 +87,13 @@ export const DashboardPage = () => {
                                 return (
                                     <div key={j.nama}>
                                         <div className="flex items-center justify-between mb-1">
-                                            <span className="text-sm text-slate-700">
-                                                {j.ikon} {j.nama}
+                                            <span className="flex items-center gap-1.5 text-sm text-slate-700">
+                                                {j.ikon?.startsWith("http") || j.ikon?.includes("/") ? (
+                                                    <img src={j.ikon} alt="ikon" className="w-4 h-4 object-contain" />
+                                                ) : (
+                                                    <span>{j.ikon}</span>
+                                                )}
+                                                {j.nama}
                                             </span>
                                             <span className="text-sm font-semibold text-slate-800">{j.count.toLocaleString()}</span>
                                         </div>

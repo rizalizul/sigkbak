@@ -38,7 +38,7 @@ const ObjekForm = ({ initial = {}, jenisList, onSave, onCancel, saving }) => {
                         <option value="">Pilih jenis...</option>
                         {jenisList.map((j) => (
                             <option key={j.id} value={j.id}>
-                                {j.ikon} {j.nama}
+                                {j.nama}
                             </option>
                         ))}
                     </select>
@@ -260,14 +260,21 @@ export const DataPage = () => {
                     <span className="text-xs text-slate-400">Filter:</span>
                     {jenisList.map((j) => {
                         const active = selectedJenis.includes(j.id);
+                        const isImage = j.ikon?.startsWith("http") || j.ikon?.includes("/");
+                        
                         return (
                             <button
                                 key={j.id}
                                 onClick={() => toggleJenisFilter(j.id)}
-                                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border font-medium transition-all ${active ? "text-white border-transparent" : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"}`}
-                                style={active ? { backgroundColor: j.warna } : {}}
+                                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border font-medium transition-all ${active ? "text-slate-800 border-slate-400 bg-slate-100 shadow-inner" : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"}`}
+                                // Hapus background color dinamis agar tombol filter tetap rapi (terutama jika warnanya transparan)
                             >
-                                {j.ikon} {j.nama}
+                                {isImage ? (
+                                    <img src={j.ikon} alt="ikon" className="w-4 h-4 object-contain" />
+                                ) : (
+                                    <span>{j.ikon}</span>
+                                )}
+                                {j.nama}
                             </button>
                         );
                     })}
@@ -335,12 +342,19 @@ export const DataPage = () => {
                                         onClick={(e) => e.stopPropagation()}
                                         className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
                                     />
-                                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0 border-2 border-white shadow-sm bg-white">
+                                    <div className={`w-7 h-7 flex items-center justify-center text-sm flex-shrink-0 ${obj.jenis_objek?.warna === "transparent" ? "" : "rounded-full border-2 border-white shadow-sm bg-white"}`}
+                                        style={{ backgroundColor: obj.jenis_objek?.warna === "transparent" ? "transparent" : (obj.jenis_objek?.warna || "#6b7280") }}>
                                         {obj.jenis_objek?.ikon ? (
-                                            obj.jenis_objek.ikon.endsWith('.svg') || obj.jenis_objek.ikon.endsWith('.png') ? (
-                                                <img src={`/icons/${obj.jenis_objek.ikon}`} alt="ikon" className="w-4 h-4 object-contain" />
+                                            obj.jenis_objek.ikon.startsWith("http") || obj.jenis_objek.ikon.includes("/") ? (
+                                                <img 
+                                                    src={obj.jenis_objek.ikon} 
+                                                    alt="ikon" 
+                                                    className={`w-full h-full object-contain p-0.5 ${obj.jenis_objek?.warna === "transparent" ? "drop-shadow-sm" : ""}`} 
+                                                />
                                             ) : (
-                                                <span style={{ backgroundColor: obj.jenis_objek?.warna || "#6b7280" }} className="w-full h-full rounded-full flex items-center justify-center">{obj.jenis_objek.ikon}</span>
+                                                <span className={obj.jenis_objek?.warna === "transparent" ? "text-lg drop-shadow-sm" : ""}>
+                                                    {obj.jenis_objek.ikon}
+                                                </span>
                                             )
                                         ) : "📍"}
                                     </div>

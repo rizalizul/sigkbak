@@ -193,8 +193,13 @@ export const UploadPage = () => {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm border-2 border-white shadow-md" style={{ backgroundColor: newJenisWarna }}>
-                                        {newJenisIkon}
+                                    <div 
+                                        className={`w-8 h-8 flex items-center justify-center text-sm ${newJenisWarna === "transparent" ? "" : "rounded-full border-2 border-white shadow-md"}`} 
+                                        style={{ backgroundColor: newJenisWarna === "transparent" ? "transparent" : newJenisWarna }}
+                                    >
+                                        {newJenisIkon?.startsWith("http") || newJenisIkon?.includes("/") 
+                                            ? <img src={newJenisIkon} className={`w-full h-full object-contain p-0.5 ${newJenisWarna === "transparent" ? "drop-shadow-sm" : ""}`} alt="ikon" /> 
+                                            : <span className={newJenisWarna === "transparent" ? "text-xl drop-shadow-sm" : ""}>{newJenisIkon}</span>}
                                     </div>
                                     <span className="text-sm font-medium text-slate-700">{newJenisName}</span>
                                 </div>

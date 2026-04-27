@@ -40,12 +40,27 @@ export const LayerControl = ({ jenisList, activeJenisIds, onToggleJenis, showKBA
                         jenisList.map((jenis) => {
                             const isActive = activeJenisIds.includes(jenis.id);
                             const count = objekCount[jenis.id] || 0;
+                            const isImage = jenis.ikon?.startsWith("http") || jenis.ikon?.includes("/");
+                            const isTransparent = jenis.warna === "transparent";
+
                             return (
                                 <label key={jenis.id} className="flex items-center gap-2.5 cursor-pointer group">
                                     <input type="checkbox" checked={isActive} onChange={() => onToggleJenis(jenis.id)} className="w-4 h-4 rounded accent-slate-800 cursor-pointer" />
-                                    <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: jenis.warna }} />
-                                    <span className="text-sm text-slate-700 flex-1 group-hover:text-slate-900 transition-colors">
-                                        {jenis.ikon} {jenis.nama}
+                                    
+                                    {/* Lingkaran Ikon Hybrid */}
+                                    <div 
+                                        className={`w-5 h-5 flex items-center justify-center flex-shrink-0 ${isTransparent ? "" : "rounded-full shadow-sm border border-slate-100"}`} 
+                                        style={{ backgroundColor: isTransparent ? "transparent" : jenis.warna }}
+                                    >
+                                        {isImage ? (
+                                            <img src={jenis.ikon} alt="ikon" className={`w-full h-full object-contain p-0.5 ${isTransparent ? 'drop-shadow-sm' : ''}`} />
+                                        ) : (
+                                            <span className={`text-[10px] ${isTransparent ? 'drop-shadow-sm' : ''}`}>{jenis.ikon}</span>
+                                        )}
+                                    </div>
+
+                                    <span className="text-sm text-slate-700 flex-1 group-hover:text-slate-900 transition-colors truncate">
+                                        {jenis.nama}
                                     </span>
                                     {count > 0 && <span className="text-xs text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-lg">{count}</span>}
                                 </label>
@@ -57,7 +72,9 @@ export const LayerControl = ({ jenisList, activeJenisIds, onToggleJenis, showKBA
                         {/* KBAK Layer */}
                         <label className="flex items-center gap-2.5 cursor-pointer group">
                             <input type="checkbox" checked={showKBAK} onChange={onToggleKBAK} className="w-4 h-4 rounded accent-slate-800 cursor-pointer" />
-                            <div className="w-3 h-3 rounded-sm border flex-shrink-0" style={{ backgroundColor: "#16a34a44", borderColor: "#16a34a" }} />
+                            <div className="w-4 h-4 flex items-center justify-center">
+                                <div className="w-3 h-3 rounded-sm border flex-shrink-0" style={{ backgroundColor: "#16a34a44", borderColor: "#16a34a" }} />
+                            </div>
                             <span className="text-sm text-slate-700 flex-1 group-hover:text-slate-900 transition-colors">🗺️ Layer KBAK</span>
                             <Info size={12} className="text-slate-300" />
                         </label>

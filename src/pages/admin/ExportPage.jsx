@@ -178,14 +178,21 @@ export const ExportPage = () => {
                 <div className="flex flex-wrap gap-2">
                     {jenisList.map((j) => {
                         const active = selectedJenis.includes(j.id);
+                        const isImage = j.ikon?.startsWith("http") || j.ikon?.includes("/");
+                        
                         return (
                             <button
                                 key={j.id}
                                 onClick={() => setSelectedJenis((p) => (active ? p.filter((x) => x !== j.id) : [...p, j.id]))}
-                                className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-xl border font-medium transition-all ${active ? "text-white border-transparent" : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"}`}
-                                style={active ? { backgroundColor: j.warna } : {}}
+                                className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-xl border font-medium transition-all ${active ? "text-slate-800 border-slate-400 bg-slate-100 shadow-inner" : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"}`}
+                                // Background color dihilangkan agar serasi dengan opsi transparan
                             >
-                                {j.ikon} {j.nama}
+                                {isImage ? (
+                                    <img src={j.ikon} alt="ikon" className="w-4 h-4 object-contain" />
+                                ) : (
+                                    <span>{j.ikon}</span>
+                                )}
+                                {j.nama}
                             </button>
                         );
                     })}

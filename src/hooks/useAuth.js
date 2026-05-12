@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 
-const INACTIVITY_LIMIT = 1 * 60 * 1000;
+const INACTIVITY_LIMIT = 2 * 60 * 60 * 1000; // 2 jam
 
 export const useAuth = () => {
     const [user, setUser] = useState(null);
@@ -63,8 +63,11 @@ export const useAuth = () => {
             data: { subscription },
         } = supabase.auth.onAuthStateChange((_e, session) => {
             setUser(session?.user ?? null);
-            if (session?.user) resetTimer();
-            else clearTimeout(timerRef.current);
+            if (event === 'SIGNED_IN' && session?.user) {
+                resetTimer();
+            } else if (!session?.user) {
+                clearTimeout(timerRef.current);
+            }
         });
 
         return () => {

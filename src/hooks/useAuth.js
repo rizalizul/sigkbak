@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "../lib/supabase";
 
-const INACTIVITY_LIMIT = 4 * 60 * 60 * 1000; // 4 jam dalam ms
+const INACTIVITY_LIMIT = 1 * 60 * 1000;
 
 export const useAuth = () => {
     const [user, setUser] = useState(null);

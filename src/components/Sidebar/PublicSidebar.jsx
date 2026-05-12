@@ -1,25 +1,45 @@
-import { useState } from "react";
-import { Search, ChevronLeft, ChevronRight, Map, LogIn, LayoutDashboard, Share2, Check } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Search, ChevronLeft, ChevronRight, Map, LogIn, LogOut, LayoutDashboard, ChevronDown } from "lucide-react";
 import { LayerControl } from "./LayerControl";
 import { useNavigate }  from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
+import { supabase } from "../../lib/supabase";
+import { FilterPanel } from "./FilterPanel";
 
 export const PublicSidebar = ({
     jenisList, activeJenisIds, onToggleJenis,
     showKBAK, onToggleKBAK,
     searchQuery, onSearch,
     totalObjek, filteredObjek, objekCount,
-    user,
+    user, attributeFilters, attributeOptions, onToggleAttributeFilter
 }) => {
     const [collapsed, setCollapsed] = useState(false);
-    const [copied,    setCopied]    = useState(false);
     const navigate = useNavigate();
+    const [showDropdown, setShowDropdown] = useState(false);
+    const dropdownRef = useRef(null);
+    const { logout } = useAuth();
 
-    const handleShare = () => {
-        navigator.clipboard.writeText(window.location.href).then(() => {
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2500);
-        });
+    const handleLogout = async () => {
+        if (user) {
+            await supabase.from("audit_log").insert({
+                user_id: user.id,
+                user_email: user.email,
+                action: "LOGOUT",
+                table_name: "Sistem Autentikasi",
+                record_name: "Logout dari Peta Publik"
+            });
+        }
+        setShowDropdown(false);
+        logout();
     };
+
+    useEffect(() => {
+        const handler = (e) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setShowDropdown(false);
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, []);
 
     return (
         <>
@@ -82,36 +102,78 @@ export const PublicSidebar = ({
                         onToggleKBAK={onToggleKBAK}
                         objekCount={objekCount}
                     />
+                    
+                    <FilterPanel 
+                        filters={attributeFilters} 
+                        options={attributeOptions} 
+                        toggleFilter={onToggleAttributeFilter} 
+                    />
                 </div>
 
-                {/* Footer */}
-                <div className="px-4 py-3 border-t border-slate-100 space-y-2">
-                    {/* Tombol Share dengan label jelas */}
-                    <button onClick={handleShare}
-                        className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-medium border transition-all ${copied ? "bg-green-50 border-green-300 text-green-700" : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"}`}>
-                        {copied ? <><Check size={13} /> Link berhasil disalin!</> : <><Share2 size={13} /> Bagikan Peta Ini</>}
-                    </button>
-
-                    {user ? (
-                        <>
-                            <div className="flex items-center gap-2 bg-slate-50 rounded-xl px-3 py-2">
-                                <div className="w-6 h-6 bg-slate-800 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                                    {user.email?.[0]?.toUpperCase()}
-                                </div>
-                                <span className="text-xs text-slate-600 truncate">{user.email}</span>
+                
+            </div>
+            {/* Floating User Menu (Kanan Atas) */}
+            <div className="absolute top-4 right-4 z-[1001]">
+                {user ? (
+                    <div ref={dropdownRef} className="relative">
+                        {/* Tombol Profil (Avatar Bulat) */}
+                        <button 
+                            onClick={() => setShowDropdown((p) => !p)}
+                            className="group relative flex items-center justify-center w-10 h-10 bg-white/95 backdrop-blur-sm rounded-full shadow-md border border-slate-200 hover:bg-slate-50 hover:shadow-lg transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                        >
+                            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-inner">
+                                {user.email?.[0]?.toUpperCase() || "U"}
                             </div>
-                            <button onClick={() => navigate("/admin/dashboard")}
-                                className="w-full flex items-center justify-center gap-2 py-2 bg-slate-900 text-white rounded-xl text-xs font-medium hover:bg-slate-700 transition-colors">
-                                <LayoutDashboard size={13} /> Buka Admin Panel
-                            </button>
-                        </>
-                    ) : (
-                        <button onClick={() => navigate("/login")}
-                            className="w-full flex items-center justify-center gap-2 py-2 bg-slate-900 text-white rounded-xl text-xs font-medium hover:bg-slate-700 transition-colors">
-                            <LogIn size={13} /> Masuk sebagai Editor
+
+                            {/* Tooltip Hover*/}
+                            <div className="absolute top-12 right-0 hidden group-hover:flex flex-col bg-slate-800 text-white text-xs px-3 py-2 rounded-lg shadow-xl whitespace-nowrap z-50 pointer-events-none">
+                                <span className="font-semibold">{user.user_metadata?.full_name || "Admin KBAK"}</span>
+                                <span className="text-slate-300">{user.email}</span>
+                            </div>
                         </button>
-                    )}
-                </div>
+
+                        {/* Isi Dropdown (Mirip AdminLayout) */}
+                        {showDropdown && (
+                            <div className="absolute right-0 top-12 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                                {/* Header Dropdown (Info User) */}
+                                <div className="px-4 py-5 border-b border-slate-100 bg-slate-50 flex flex-col items-center justify-center text-center">
+                                    <div className="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center text-white text-xl font-bold mb-3 shadow-sm ring-4 ring-blue-100">
+                                        {user.email?.[0]?.toUpperCase() || "U"}
+                                    </div>
+                                    <p className="text-sm font-bold text-slate-800 truncate w-full">
+                                        {user.user_metadata?.full_name || "Admin KBAK"}
+                                    </p>
+                                    <p className="text-xs text-slate-500 truncate w-full mt-0.5">
+                                        {user.email}
+                                    </p>
+                                </div>
+
+                                {/* Menu Actions */}
+                                <div className="p-2">
+                                    <button onClick={() => navigate("/admin/dashboard")}
+                                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-50 rounded-xl transition-colors font-medium">
+                                        <LayoutDashboard size={16} className="text-slate-400" /> 
+                                        Buka Admin Panel
+                                    </button>
+                                </div>
+
+                                <div className="p-2 border-t border-slate-100">
+                                    <button onClick={handleLogout}
+                                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-rose-600 hover:bg-rose-50 rounded-xl transition-colors font-medium">
+                                        <LogOut size={16} className="text-rose-500" /> 
+                                        Keluar
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    /* Tombol Login Publik */
+                    <button onClick={() => navigate("/login")}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white/95 backdrop-blur-sm text-slate-700 rounded-full shadow-md border border-slate-200 font-medium hover:bg-slate-50 hover:shadow-lg transition-all text-sm">
+                        <LogIn size={15} className="text-slate-500" /> Login
+                    </button>
+                )}
             </div>
         </>
     );

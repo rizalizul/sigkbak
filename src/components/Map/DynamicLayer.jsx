@@ -39,8 +39,46 @@ export const DynamicLayer = ({ objekList, isEditor = false }) => {
 
             const warna = d.jenis_objek?.warna || "#6b7280";
             const ikon = d.jenis_objek?.ikon || "📍";
+            
             const marker = L.marker([lat, lon], { icon: createMarkerIcon(warna, ikon) });
-            marker.bindPopup(buildPopupHTML(d, isEditor), { maxWidth: 300, minWidth: 290 });
+
+            // Geser kamera agar marker berada di bawah
+            marker.on("click", (e) => {
+                setTimeout(() => {
+                    const container = map.getContainer();
+                    const h = container.offsetHeight;
+                    const w = container.offsetWidth;
+
+                    // 1. Tentukan batas area yang tertutup Sidebar (asumsi 300px)
+                    const sidebarWidth = 300;
+
+                    // 2. Tentukan target posisi marker di area yang "aman"
+                    // Horizontal: letakkan di tengah-tengah sisa ruang (Layar dikurangi Sidebar)
+                    const targetX = ((w - sidebarWidth) / 2) + sidebarWidth;
+                    
+                    // Vertical: dorong ke 85% tinggi layar (sangat bawah)
+                    // agar pop-up yang panjang punya ruang ke atas tanpa menabrak Search Bar
+                    const targetY = h * 0.85;
+
+                    const targetPoint = L.point(targetX, targetY);
+
+                    // 3. Hitung selisih posisi saat ini dengan target
+                    const markerPoint = map.latLngToContainerPoint(e.latlng);
+                    const offset = markerPoint.subtract(targetPoint);
+
+                    // 4. Eksekusi pergeseran peta
+                    map.panBy(offset, { animate: true, duration: 0.6 });
+                }, 50);
+            });
+
+            marker.bindPopup(buildPopupHTML(d, isEditor), { 
+                maxWidth: 300, 
+                minWidth: 290,
+                autoPanPaddingTopLeft: [350, 150], 
+                autoPanPaddingBottomRight: [20, 20],
+                autoPan: true
+            });
+            
             cluster.addLayer(marker);
         });
 

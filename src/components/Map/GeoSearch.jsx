@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
-import { useMap } from "react-leaflet";
+import { useMap , Marker, Popup, CircleMarker } from "react-leaflet";
 import { Search, X, Loader2, MapPin, Navigation } from "lucide-react";
+import L from "leaflet";
 
 export const GeoSearch = () => {
     const map = useMap();
@@ -10,20 +11,16 @@ export const GeoSearch = () => {
     const [open,    setOpen]    = useState(false);
     const debounceRef  = useRef(null);
     const containerRef = useRef(null);
+    const [myLocation, setMyLocation] = useState(null); // lokasi user
 
     // Stop map events dari container ini agar tidak trigger zoom/drag
     useEffect(() => {
         if (!containerRef.current) return;
-        const el = containerRef.current;
-        const stop = (e) => e.stopPropagation();
-        ["mousedown","mousemove","mouseup","click","dblclick","wheel","touchstart","touchmove","touchend"].forEach((ev) => {
-            el.addEventListener(ev, stop);
-        });
-        return () => {
-            ["mousedown","mousemove","mouseup","click","dblclick","wheel","touchstart","touchmove","touchend"].forEach((ev) => {
-                el.removeEventListener(ev, stop);
-            });
-        };
+        
+        // Disable click dan scroll propagation agar peta tidak bergeser/zoom saat berinteraksi dengan Search Bar
+        L.DomEvent.disableClickPropagation(containerRef.current);
+        L.DomEvent.disableScrollPropagation(containerRef.current);
+        
     }, []);
 
     // Tutup dropdown saat klik luar
@@ -62,16 +59,53 @@ export const GeoSearch = () => {
     };
 
     const handleSelect = (result) => {
-        map.flyTo([parseFloat(result.lat), parseFloat(result.lon)], result.isCoord ? 15 : 13, { animate: true, duration: 1.2 });
+        // Cek apakah hasil pencarian memiliki data boundingbox (batas wilayah)
+        if (result.boundingbox) {
+            // Nominatim memberikan format: [south, north, west, east]
+            const [south, north, west, east] = result.boundingbox;
+            
+            // Buat koordinat batas untuk Leaflet
+            const bounds = [
+                [parseFloat(south), parseFloat(west)],
+                [parseFloat(north), parseFloat(east)]
+            ];
+
+            // Gunakan fitBounds agar otomatis zoom-out/in sesuai luas wilayah
+            map.fitBounds(bounds, { 
+                animate: true, 
+                padding: [20, 20], // Beri sedikit ruang di pinggir peta
+                duration: 1.5 
+            });
+        } else {
+            // Fallback: Jika tidak ada boundingbox (misal hasil input koordinat manual)
+            map.flyTo(
+                [parseFloat(result.lat), parseFloat(result.lon)], 
+                result.isCoord ? 15 : 13, 
+                { animate: true, duration: 1.2 }
+            );
+        }
+
         setQuery(result.display_name.split(",")[0]);
         setOpen(false);
     };
 
     const goToMyLocation = () => {
-        if (!navigator.geolocation) return;
+        if (!navigator.geolocation) {
+            alert("Geolocation tidak didukung oleh browser Anda");
+            return;
+        }
+        
         navigator.geolocation.getCurrentPosition(
-            (pos) => map.flyTo([pos.coords.latitude, pos.coords.longitude], 14, { animate: true }),
-            (err) => console.error(err)
+            (pos) => {
+                const coords = [pos.coords.latitude, pos.coords.longitude];
+                setMyLocation(coords); // Simpan lokasi
+                map.flyTo(coords, 16, { animate: true }); // Zoom lebih dekat (level 16)
+            },
+            (err) => {
+                console.error(err);
+                alert("Gagal mendapatkan lokasi. Pastikan izin GPS aktif.");
+            },
+            { enableHighAccuracy: true }
         );
     };
 
@@ -115,6 +149,34 @@ export const GeoSearch = () => {
                         </button>
                     ))}
                 </div>
+            )}
+
+            {/* TAMPILKAN TITIK LOKASI SAYA */}
+            {myLocation && (
+                <CircleMarker
+                    center={myLocation}
+                    radius={8}
+                    pathOptions={{ 
+                        fillColor: '#3b82f6', 
+                        color: 'white', 
+                        weight: 2, 
+                        fillOpacity: 1 
+                    }}
+                >
+                    {/* closeButton={false} untuk membuang tombol X bawaan yang jelek */}
+                    <Popup closeButton={false} offset={[0, -5]}>
+                        <div className="flex items-center gap-2 px-1 py-0.5">
+                            {/* Efek animasi ping (berdenyut) ala GPS */}
+                            <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-600"></span>
+                            </span>
+                            <span className="text-xs font-semibold text-slate-700 whitespace-nowrap">
+                                Posisi Anda Saat Ini
+                            </span>
+                        </div>
+                    </Popup>
+                </CircleMarker>
             )}
         </div>
     );

@@ -6,15 +6,15 @@ export const MAP_CONFIG = {
 };
 
 export const TILE_LAYERS = {
-    street: {
-        url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-        attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
-        label: "Street Map",
-    },
     satellite: {
         url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
         attribution: "© Esri World Imagery",
         label: "Satellite",
+    },
+    street: {
+        url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
+        label: "Street Map",
     },
     topo: {
         url: "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",

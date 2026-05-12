@@ -16,17 +16,72 @@ export const PublicMapPage = () => {
     const [showKBAK,       setShowKBAK]       = useState(false);
     const [searchQuery,    setSearchQuery]    = useState("");
 
+    const [attributeFilters, setAttributeFilters] = useState({
+        provinsi: [],
+        kota: [],
+        klasifikasi: []
+    });
+
     const { data: objekData, filtered } = useObjekSpasial(activeJenisIds);
 
-    // Filter berdasarkan search nama objek
+    const attributeOptions = useMemo(() => {
+        const provs = new Set();
+        const kotas = new Set();
+        const klas = new Set();
+        
+        objekData.forEach(obj => {
+            if (obj.atribut?.Provinsi) provs.add(obj.atribut.Provinsi);
+            
+            // 🌟 Membaca Kab_Kota sesuai format Excel Anda
+            const namaKota = obj.atribut?.Kab_Kota || obj.atribut?.Kabupaten || obj.atribut?.Kota;
+            if (namaKota) kotas.add(namaKota);
+            
+            // 🌟 Membaca Klasifikasi Karst atau Jenis
+            const namaKlasifikasi = obj.atribut?.['Klasifikasi Karst'] || obj.atribut?.Jenis || obj.atribut?.Klasifikasi;
+            if (namaKlasifikasi) klas.add(namaKlasifikasi);
+        });
+        
+        return { 
+            provinsi: [...provs].sort(), 
+            kota: [...kotas].sort(), 
+            klasifikasi: [...klas].sort() 
+        };
+    }, [objekData]);
+
+    // Fungsi Toggle Filter Atribut
+    const handleToggleAttributeFilter = (category, value) => {
+        setAttributeFilters(prev => {
+            const current = prev[category];
+            const next = current.includes(value)
+                ? current.filter(item => item !== value)
+                : [...current, value];
+            return { ...prev, [category]: next };
+        });
+    };
+
+    // Terapkan Filter Search DAN Filter Atribut ke Data Peta
     const displayList = useMemo(() => {
-        if (!searchQuery.trim()) return filtered;
-        const q = searchQuery.toLowerCase();
-        return filtered.filter((d) =>
-            d.nama_objek?.toLowerCase().includes(q) ||
-            JSON.stringify(d.atribut)?.toLowerCase().includes(q)
-        );
-    }, [filtered, searchQuery]);
+        return filtered.filter((d) => {
+            let matchSearch = true;
+            if (searchQuery.trim()) {
+                const q = searchQuery.toLowerCase();
+                matchSearch = d.nama_objek?.toLowerCase().includes(q) || JSON.stringify(d.atribut)?.toLowerCase().includes(q);
+            }
+
+            const matchProvinsi = attributeFilters.provinsi.length === 0 || 
+                                  attributeFilters.provinsi.includes(d.atribut?.Provinsi);
+            
+            const namaKotaD = d.atribut?.Kab_Kota || d.atribut?.Kabupaten || d.atribut?.Kota;
+            const matchKota = attributeFilters.kota.length === 0 || 
+                              attributeFilters.kota.includes(namaKotaD);
+
+            const namaKlasD = d.atribut?.['Klasifikasi Karst'] || d.atribut?.Jenis || d.atribut?.Klasifikasi;
+            const matchKlasifikasi = attributeFilters.klasifikasi.length === 0 || 
+                                     attributeFilters.klasifikasi.includes(namaKlasD);
+
+            return matchSearch && matchProvinsi && matchKota && matchKlasifikasi;
+        });
+    }, [filtered, searchQuery, attributeFilters]);
 
     const objekCount = useMemo(() => {
         const counts = {};
@@ -72,6 +127,10 @@ export const PublicMapPage = () => {
                 filteredObjek={displayList.length}
                 objekCount={objekCount}
                 user={user}
+                
+                attributeFilters={attributeFilters}
+                attributeOptions={attributeOptions}
+                onToggleAttributeFilter={handleToggleAttributeFilter}
             />
         </div>
     );

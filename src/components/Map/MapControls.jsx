@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useMap } from "react-leaflet";
 import { TileLayer } from "react-leaflet";
-import { Layers, Plus, Minus, Crosshair, Square, Ruler } from "lucide-react";
+import { Layers, Plus, Minus, Crosshair, Square, Ruler, Share2, Check } from "lucide-react";
 import { TILE_LAYERS } from "../../constants/mapConfig";
 import L from "leaflet";
 
@@ -98,12 +98,14 @@ const fmt = {
 const useMeasure = (map) => {
     const [measureMode,   setMeasureMode]   = useState(null);
     const [measureResult, setMeasureResult] = useState(null);
-    const stateRef = useRef({ latlngs: [], layers: [], tempLine: null });
+    const stateRef = useRef({ latlngs: [], layers: [], tempLine: null, handlers: null });
 
     const clearMeasure = () => {
         stateRef.current.layers.forEach((l) => map.removeLayer(l));
         if (stateRef.current.tempLine) map.removeLayer(stateRef.current.tempLine);
-        stateRef.current = { latlngs: [], layers: [], tempLine: null };
+        stateRef.current.latlngs = [];
+        stateRef.current.layers = [];
+        stateRef.current.tempLine = null;
         setMeasureResult(null);
     };
 
@@ -111,6 +113,13 @@ const useMeasure = (map) => {
         clearMeasure();
         map.getContainer().style.cursor = "";
         setMeasureMode(null);
+
+        if (stateRef.current.handlers) {
+            map.off("click", stateRef.current.handlers.onClick);
+            map.off("dblclick", stateRef.current.handlers.onDblClick);
+            map.off("mousemove", stateRef.current.handlers.onMouseMove);
+            stateRef.current.handlers = null;
+        }
     };
 
     const activateMeasure = (newMode) => {
@@ -142,9 +151,12 @@ const useMeasure = (map) => {
                 stateRef.current.layers.push(poly);
                 setMeasureResult({ type: "area", value: fmt.area(calcArea(pts.map((p) => L.latLng(p.lat, p.lng)))) });
             }
+            
             map.off("click", onClick);
             map.off("dblclick", onDblClick);
             map.off("mousemove", onMouseMove);
+            stateRef.current.handlers = null;
+
             map.getContainer().style.cursor = "";
             setMeasureMode(null);
         };
@@ -155,12 +167,14 @@ const useMeasure = (map) => {
             stateRef.current.tempLine = L.polyline([...pts, e.latlng], { color, weight: 2, dashArray: "4,4", opacity: 0.6 }).addTo(map);
         };
 
+        stateRef.current.handlers = { onClick, onDblClick, onMouseMove };
+
         map.on("click", onClick);
         map.on("dblclick", onDblClick);
         map.on("mousemove", onMouseMove);
     };
 
-    useEffect(() => () => cancelMeasure(), []); // eslint-disable-line
+    useEffect(() => () => cancelMeasure(), []);
 
     return { measureMode, measureResult, activateMeasure, cancelMeasure, clearMeasure };
 };
@@ -168,9 +182,17 @@ const useMeasure = (map) => {
 // ── MapControls ───────────────────────────────────────────
 export const MapControls = () => {
     const map = useMap();
-    const [activeTile,    setActiveTile]    = useState("street");
+    const [activeTile,    setActiveTile]    = useState("satellite");
     const [showTileMenu,  setShowTileMenu]  = useState(false);
     const [boxZoomActive, setBoxZoomActive] = useState(false);
+    const [copied, setCopied] = useState(false);
+
+    const handleShare = () => {
+        navigator.clipboard.writeText(window.location.href).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        });
+    };
 
     const { measureMode, measureResult, activateMeasure, cancelMeasure, clearMeasure } = useMeasure(map);
 
@@ -185,7 +207,7 @@ export const MapControls = () => {
 
             {/* Hasil pengukuran */}
             {measureResult && (
-                <div className="absolute bottom-8 right-16 z-[1000] bg-white rounded-xl shadow-lg border border-slate-100 px-4 py-3 flex items-center gap-3">
+                <div className="absolute bottom-20 right-4 z-[1000] bg-white rounded-xl shadow-lg border border-slate-100 px-4 py-3 flex items-center gap-3 animate-in fade-in slide-in-from-right-4 duration-300">
                     <div>
                         <p className="text-xs text-slate-400">{measureResult.type === "distance" ? "📏 Jarak" : "📐 Luas"}</p>
                         <p className="text-xl font-bold text-slate-800">{measureResult.value}</p>
@@ -196,7 +218,7 @@ export const MapControls = () => {
 
             {/* Hint ukur */}
             {measureMode && (
-                <div className="absolute bottom-8 right-16 z-[1000] bg-slate-900/90 text-white text-xs rounded-xl px-3 py-2 backdrop-blur-sm">
+                <div className="absolute bottom-20 right-4 z-[1000] bg-slate-900/90 text-white text-xs rounded-xl px-4 py-2.5 shadow-lg backdrop-blur-sm font-medium animate-in fade-in slide-in-from-right-4 duration-300">
                     {measureMode === "distance"
                         ? "📏 Klik titik-titik, double-click selesai"
                         : "📐 Klik titik-titik, double-click tutup area"}
@@ -205,13 +227,13 @@ export const MapControls = () => {
 
             {/* Hint box zoom */}
             {boxZoomActive && (
-                <div className="absolute top-16 right-4 z-[1000] bg-slate-900/90 text-white text-xs rounded-xl px-3 py-2 shadow-lg backdrop-blur-sm">
-                    📦 Drag kotak area yang ingin diperbesar
+                <div className="absolute bottom-20 right-4 z-[1000] bg-slate-900/90 text-white text-xs rounded-full px-4 py-2.5 shadow-lg backdrop-blur-sm font-medium">
+                    📦 Drag kotak area di peta yang ingin diperbesar
                 </div>
             )}
 
             {/* Kontrol kanan atas */}
-            <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-1">
+            <div className="absolute top-20 right-4 z-[1000] flex flex-col gap-1">
                 {/* Zoom */}
                 {[
                     { icon: Plus,      action: () => map.setZoom(map.getZoom() + 1), title: "Zoom In" },
@@ -235,28 +257,51 @@ export const MapControls = () => {
                 <div className="h-px bg-slate-200 mx-1 my-0.5" />
 
                 {/* Ukur Jarak */}
-                <button onClick={() => measureMode === "distance" ? cancelMeasure() : (activateMeasure("distance"), setBoxZoomActive(false))}
+                <button 
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        measureMode === "distance" ? cancelMeasure() : (activateMeasure("distance"), setBoxZoomActive(false));
+                    }}
                     title="Ukur Jarak"
-                    className={`w-9 h-9 backdrop-blur-sm rounded-xl shadow-md border flex items-center justify-center transition-all ${measureMode === "distance" ? "bg-blue-600 text-white border-blue-600 ring-2 ring-blue-300" : "bg-white/95 border-slate-100 text-slate-600 hover:bg-slate-50"}`}>
+                    className={`w-9 h-9 backdrop-blur-sm rounded-xl shadow-md border flex items-center justify-center transition-all ${measureMode === "distance" ? "bg-blue-600 text-white border-blue-600 ring-2 ring-blue-300" : "bg-white/95 border-slate-100 text-slate-600 hover:bg-slate-50"}`}
+                >
                     <Ruler size={14} />
                 </button>
 
                 {/* Ukur Luas */}
-                <button onClick={() => measureMode === "area" ? cancelMeasure() : (activateMeasure("area"), setBoxZoomActive(false))}
+                <button 
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        measureMode === "area" ? cancelMeasure() : (activateMeasure("area"), setBoxZoomActive(false));
+                    }}
                     title="Ukur Luas"
-                    className={`w-9 h-9 backdrop-blur-sm rounded-xl shadow-md border flex items-center justify-center transition-all ${measureMode === "area" ? "bg-emerald-600 text-white border-emerald-600 ring-2 ring-emerald-300" : "bg-white/95 border-slate-100 text-slate-600 hover:bg-slate-50"}`}>
+                    className={`w-9 h-9 backdrop-blur-sm rounded-xl shadow-md border flex items-center justify-center transition-all ${measureMode === "area" ? "bg-emerald-600 text-white border-emerald-600 ring-2 ring-emerald-300" : "bg-white/95 border-slate-100 text-slate-600 hover:bg-slate-50"}`}
+                >
                     <Square size={13} strokeWidth={1.5} />
+                </button>
+
+                {/* Separator Baru */}
+                <div className="h-px bg-slate-200 mx-1 my-0.5" />
+
+                {/* 🌟 Tombol Bagikan Peta */}
+                <button 
+                    onClick={handleShare}
+                    title={copied ? "Link berhasil disalin!" : "Bagikan tampilan peta ini"}
+                    className={`w-9 h-9 backdrop-blur-sm rounded-xl shadow-md border flex items-center justify-center transition-all ${copied ? "bg-green-500 text-white border-green-500" : "bg-white/95 border-slate-100 text-slate-600 hover:bg-slate-50"}`}
+                >
+                    {copied ? <Check size={14} strokeWidth={3} /> : <Share2 size={14} />}
                 </button>
             </div>
 
             {/* Tile Switcher */}
-            <div className="absolute top-4 right-16 z-[1000]">
+            <div className="absolute bottom-6 right-4 z-[1000]">
                 <button onClick={() => setShowTileMenu((p) => !p)}
                     className="flex items-center gap-2 px-3 py-2 bg-white/95 backdrop-blur-sm rounded-xl shadow-md border border-slate-100 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-all">
                     <Layers size={14} />{TILE_LAYERS[activeTile].label}
                 </button>
+                
                 {showTileMenu && (
-                    <div className="absolute right-0 top-11 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden min-w-[140px]">
+                    <div className="absolute right-0 bottom-12 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden min-w-[140px] animate-in fade-in slide-in-from-bottom-2 duration-200">
                         {Object.entries(TILE_LAYERS).map(([key, val]) => (
                             <button key={key} onClick={() => { setActiveTile(key); setShowTileMenu(false); }}
                                 className={`w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors ${activeTile === key ? "text-blue-600 font-semibold bg-blue-50" : "text-slate-700"}`}>

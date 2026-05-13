@@ -60,13 +60,14 @@ export const UploadPage = () => {
             "application/zip": [".zip"],
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
             "application/vnd.ms-excel": [".xls"],
+            "text/csv": [".csv"],
         },
     });
 
     const getFileIcon = (name) => {
         const ext = name.split(".").pop().toLowerCase();
         if (ext === "zip") return <FileArchive size={14} className="text-amber-500" />;
-        if (["xlsx", "xls"].includes(ext)) return <FileSpreadsheet size={14} className="text-green-500" />;
+        if (["xlsx", "xls", "csv"].includes(ext)) return <FileSpreadsheet size={14} className="text-green-500" />;
         return <File size={14} className="text-blue-500" />;
     };
 
@@ -91,8 +92,9 @@ export const UploadPage = () => {
         setParsing(true);
         setError(null);
         try {
-            const isExcel = files.some((f) => /\.(xlsx|xls)$/i.test(f.name));
-            let parsed = isExcel ? parseExcel(await files.find((f) => /\.(xlsx|xls)$/i.test(f.name)).arrayBuffer()) : await parseShapefiles(files);
+            const isExcel = files.some((f) => /\.(xlsx|xls|csv)$/i.test(f.name));
+            let parsed = isExcel ? parseExcel(await files.find((f) => /\.(xlsx|xls|csv)$/i.test(f.name)).arrayBuffer()) : await parseShapefiles(files);
+            
             if (!parsed.length) throw new Error("Tidak ada data yang berhasil dibaca.");
             setParsedItems(parsed);
             setStep("columns");
@@ -225,7 +227,7 @@ export const UploadPage = () => {
                                 <input {...getInputProps()} />
                                 <Upload size={28} className="text-slate-300 mx-auto mb-3" />
                                 <p className="text-sm font-medium text-slate-700 mb-1">{isDragActive ? "Lepas file di sini..." : "Drag & drop atau klik untuk pilih"}</p>
-                                <p className="text-xs text-slate-400">.xlsx / .xls / .zip (Khusus Shapefile)</p>
+                                <p className="text-xs text-slate-400">.xlsx / .xls / .csv / .zip (Khusus Shapefile)</p>
                             </div>
                             {/* INFORMASI KETENTUAN UPLOAD */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
@@ -233,7 +235,7 @@ export const UploadPage = () => {
                                 <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm text-emerald-800">
                                     <p className="font-bold flex items-center gap-1.5 mb-1.5">
                                         <FileSpreadsheet size={15} className="text-emerald-600 flex-shrink-0" /> 
-                                        Ketentuan Excel (.xlsx / .xls)
+                                        Ketentuan Excel (.xlsx / .xls / .csv)
                                     </p>
                                     <ul className="list-disc list-outside text-xs space-y-1.5 text-emerald-700 ml-4">
                                         <li>Nama Kolom (Header) wajib berada tepat di <strong>Baris 1</strong>.</li>

@@ -12,7 +12,12 @@ export const useAuth = () => {
     const logout = useCallback(async () => {
         clearTimeout(timerRef.current);
         localStorage.removeItem("last_activity");
-        await supabase.auth.signOut();
+        
+        try {
+            await supabase.auth.signOut();
+        } catch (error) {
+            console.warn("Logout timeout/error diabaikan:", error);
+        }
     }, []);
 
     const resetTimer = useCallback(() => {
@@ -64,10 +69,9 @@ export const useAuth = () => {
                 // Hitung selisih waktu sekarang dengan waktu terakhir
                 const timePassed = Date.now() - parseInt(lastActivity, 10);
                 
-                // Jika selisihnya lebih dari (meskipun laptop habis dimatikan)
                 if (timePassed > INACTIVITY_LIMIT) {
-                    await logout();
                     setLoading(false);
+                    logout();
                     return;
                 }
             }

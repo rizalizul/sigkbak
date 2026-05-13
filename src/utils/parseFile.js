@@ -29,145 +29,86 @@ export const parseExcel = (buffer) => {
     const wb = XLSX.read(buffer, { type: "array" });
     const ws = wb.Sheets[wb.SheetNames[0]];
     
-    // Tambahkan defval: "" agar sel yang kosong karena di-merge tidak terbaca sebagai undefined
+    // defval: "" agar sel yang kosong tidak terbaca undefined
     const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
 
-    if (rows.length < 2) return [];
+    if (rows.length < 2) throw new Error("File Excel kosong atau tidak valid.");
 
-    const row1 = rows[0] || [];
-    // Deteksi jika ini adalah file dengan 2 baris header (Merge Cells)
-    const hasTwoRowHeader = row1.some((v) => v && ["Koordinat", "Lokasi", "Geologi", "Morfometri", "Hidrologi", "Nama Objek"].includes(String(v)));
+    // Deteksi 2 baris header
+    const row1Check = (rows[0] || []).map((h) => String(h ?? "").toLowerCase().trim());
+    const isOldFormat = row1Check.some((v) => 
+        ["koordinat", "lokasi", "geologi", "morfometri", "hidrologi"].includes(v)
+    );
 
-    if (hasTwoRowHeader) {
-        // ── FORMAT 2 BARIS HEADER (SMART HEADER REPAIR) ──
-        const row2 = rows[1] || [];
-        const finalHeaders = [];
-        const maxCols = Math.max(row1.length, row2.length);
-
-        // 1. LOGIKA PENAMBALAN HEADER
-        for (let i = 0; i < maxCols; i++) {
-            const h2 = row2[i] ? String(row2[i]).trim() : "";
-            const h1 = row1[i] ? String(row1[i]).trim() : "";
-            finalHeaders.push(h2 !== "" ? h2 : h1);
-        }
-
-        const items = [];
-        for (let i = 2; i < rows.length; i++) {
-            const r = rows[i];
-            if (!r || r.every((v) => v === "")) continue;
-
-            const obj = {};
-            finalHeaders.forEach((h, idx) => {
-                if (h && r[idx] !== "") obj[h] = r[idx];
-            });
-
-            // Cari kolom esensial
-            const namaKey = finalHeaders.find((h) => ["nama objek", "nama_objek", "nama", "name"].includes(h.toLowerCase()));
-            const xKey = finalHeaders.find((h) => ["x", "longitude", "lon", "koordinat_x", "bujur"].includes(h.toLowerCase()));
-            const yKey = finalHeaders.find((h) => ["y", "latitude", "lat", "koordinat_y", "lintang"].includes(h.toLowerCase()));
-            const provinsiKey = finalHeaders.find((h) => ["provinsi", "propinsi", "province"].includes(h.toLowerCase()));
-
-            const nama = namaKey ? obj[namaKey] : "";
-            let x = xKey ? parseFloat(obj[xKey]) : NaN;
-            let y = yKey ? parseFloat(obj[yKey]) : NaN;
-            const namaProvinsi = provinsiKey && obj[provinsiKey] ? String(obj[provinsiKey]).toUpperCase().trim() : "";
-
-            // 🌟 LOGIKA KONVERSI UTM OTOMATIS (BLOK 1) 🌟
-            let conversionError = null;
-            if (!isNaN(x) && !isNaN(y) && Math.abs(x) > 180) {
-                const utmZone = PROVINCE_TO_UTM[namaProvinsi];
-                if (utmZone) {
-                    const utmProj = getUtmProj(utmZone);
-                    const wgs84Proj = "+proj=longlat +datum=WGS84 +no_defs";
-                    try {
-                        const converted = proj4(utmProj, wgs84Proj, [x, y]);
-                        x = converted[0];
-                        y = converted[1];
-                    } catch (err) {
-                        conversionError = "Gagal konversi koordinat UTM";
-                        x = null; y = null;
-                    }
-                } else {
-                    conversionError = "UTM terdeteksi, tapi kolom Provinsi kosong/tidak valid";
-                    x = null; y = null;
-                }
-            }
-
-            const atribut = { ...obj };
-            if (namaKey) delete atribut[namaKey];
-            if (xKey) delete atribut[xKey];
-            if (yKey) delete atribut[yKey];
-
-            items.push({
-                nama_objek: String(nama || ""),
-                koordinat_x: isNaN(x) ? null : x,
-                koordinat_y: isNaN(y) ? null : y,
-                atribut,
-                error: conversionError
-            });
-        }
-        return items;
-
-    } else {
-        // ── FORMAT 1 BARIS HEADER (Format Bebas) ──
-        const headers = (rows[0] || []).map((h) => String(h ?? "").trim());
-        const items = [];
-
-        for (let i = 1; i < rows.length; i++) {
-            const r = rows[i];
-            if (!r || r.every((v) => v === "")) continue;
-
-            const obj = {};
-            headers.forEach((h, idx) => {
-                if (h && r[idx] !== "") obj[h] = r[idx];
-            });
-
-            const namaKey = headers.find((h) => ["nama objek", "nama_objek", "nama", "name"].includes(h.toLowerCase()));
-            const xKey = headers.find((h) => ["x", "longitude", "lon", "koordinat_x"].includes(h.toLowerCase()));
-            const yKey = headers.find((h) => ["y", "latitude", "lat", "koordinat_y"].includes(h.toLowerCase()));
-            const provinsiKey = headers.find((h) => ["provinsi", "propinsi", "province"].includes(h.toLowerCase()));
-
-            const nama = namaKey ? obj[namaKey] : "";
-            let x = xKey ? parseFloat(obj[xKey]) : NaN;
-            let y = yKey ? parseFloat(obj[yKey]) : NaN;
-            const namaProvinsi = provinsiKey && obj[provinsiKey] ? String(obj[provinsiKey]).toUpperCase().trim() : "";
-
-            // 🌟 LOGIKA KONVERSI UTM OTOMATIS (BLOK 2) 🌟
-            let conversionError = null;
-            if (!isNaN(x) && !isNaN(y) && Math.abs(x) > 180) {
-                const utmZone = PROVINCE_TO_UTM[namaProvinsi];
-                if (utmZone) {
-                    const utmProj = getUtmProj(utmZone);
-                    const wgs84Proj = "+proj=longlat +datum=WGS84 +no_defs";
-                    try {
-                        const converted = proj4(utmProj, wgs84Proj, [x, y]);
-                        x = converted[0];
-                        y = converted[1];
-                    } catch (err) {
-                        conversionError = "Gagal konversi koordinat UTM";
-                        x = null; y = null;
-                    }
-                } else {
-                    conversionError = "UTM terdeteksi, tapi kolom Provinsi kosong/tidak valid";
-                    x = null; y = null;
-                }
-            }
-
-            const atribut = { ...obj };
-            if (namaKey) delete atribut[namaKey];
-            if (xKey) delete atribut[xKey];
-            if (yKey) delete atribut[yKey];
-
-            items.push({
-                nama_objek: String(nama || ""),
-                koordinat_x: isNaN(x) ? null : x,
-                koordinat_y: isNaN(y) ? null : y,
-                atribut,
-                error: conversionError
-            });
-        }
-        return items;
+    if (isOldFormat) {
+        throw new Error("Format Ditolak: File menggunakan header 2 baris (Merge Cells). Harap pastikan header hanya 1 baris dan data dimulai di baris 2.");
     }
+
+    // ── FORMAT STANDAR: Baris 1 Header, Baris 2 Data ──
+    const headers = (rows[0] || []).map((h) => String(h ?? "").trim());
+    const items = [];
+
+    for (let i = 1; i < rows.length; i++) {
+        const r = rows[i];
+        if (!r || r.every((v) => v === "")) continue;
+
+        const obj = {};
+        headers.forEach((h, idx) => {
+            if (h && r[idx] !== "") obj[h] = r[idx];
+        });
+
+        const namaKey = headers.find((h) => ["nama objek", "nama_objek", "nama", "name"].includes(h.toLowerCase()));
+        const xKey = headers.find((h) => ["x", "longitude", "lon", "koordinat_x"].includes(h.toLowerCase()));
+        const yKey = headers.find((h) => ["y", "latitude", "lat", "koordinat_y"].includes(h.toLowerCase()));
+        const provinsiKey = headers.find((h) => ["provinsi", "propinsi", "province"].includes(h.toLowerCase()));
+
+        const nama = namaKey ? obj[namaKey] : "";
+        
+        // Ganti koma dengan titik (jika ada admin typo ketik koodinat pakai koma)
+        let x = xKey ? parseFloat(String(obj[xKey]).replace(',', '.')) : NaN;
+        let y = yKey ? parseFloat(String(obj[yKey]).replace(',', '.')) : NaN;
+        
+        const namaProvinsi = provinsiKey && obj[provinsiKey] ? String(obj[provinsiKey]).toUpperCase().trim() : "";
+
+        // LOGIKA KONVERSI UTM OTOMATIS
+        let conversionError = null;
+        if (!isNaN(x) && !isNaN(y) && Math.abs(x) > 180) {
+            const utmZone = PROVINCE_TO_UTM[namaProvinsi];
+            if (utmZone) {
+                const utmProj = getUtmProj(utmZone);
+                const wgs84Proj = "+proj=longlat +datum=WGS84 +no_defs";
+                try {
+                    const converted = proj4(utmProj, wgs84Proj, [x, y]);
+                    x = converted[0];
+                    y = converted[1];
+                } catch (err) {
+                    conversionError = "Gagal konversi koordinat UTM";
+                    x = null; y = null;
+                }
+            } else {
+                conversionError = "UTM terdeteksi, tapi kolom Provinsi kosong/tidak valid";
+                x = null; y = null;
+            }
+        }
+
+        // Susun atribut JSON tambahan
+        const atribut = { ...obj };
+        
+        // Hapus kunci wajib dari dalam atribut agar tidak double di database
+        if (namaKey) delete atribut[namaKey];
+        if (xKey) delete atribut[xKey];
+        if (yKey) delete atribut[yKey];
+
+        items.push({
+            nama_objek: String(nama || ""),
+            koordinat_x: isNaN(x) ? null : x,
+            koordinat_y: isNaN(y) ? null : y,
+            atribut,
+            error: conversionError
+        });
+    }
+    
+    return items;
 };
 
 // ── Shapefile Parser ──────────────────────────────────────
@@ -180,23 +121,15 @@ const readBuffer = (file) =>
     });
 
 export const parseShapefiles = async (files) => {
-    const byExt = (ext) => files.find((f) => f.name.toLowerCase().endsWith(ext));
-    const zipFile = byExt(".zip");
-    const shpFile = byExt(".shp");
-    const dbfFile = byExt(".dbf");
-
-    let geojson;
-    if (zipFile) {
-        geojson = await shp(await readBuffer(zipFile));
-    } else if (shpFile && dbfFile) {
-        const [shpBuf, dbfBuf] = await Promise.all([readBuffer(shpFile), readBuffer(dbfFile)]);
-        geojson = shp.combine([shp.parseShp(shpBuf), shp.parseDbf(dbfBuf)]);
-    } else if (shpFile) {
-        const geoms = shp.parseShp(await readBuffer(shpFile));
-        geojson = { type: "FeatureCollection", features: geoms.map((g) => ({ type: "Feature", geometry: g, properties: {} })) };
-    } else {
-        throw new Error("File tidak lengkap. Butuh minimal .shp atau .zip");
+    // Hanya cari file ZIP
+    const zipFile = files.find((f) => f.name.toLowerCase().endsWith(".zip"));
+    
+    if (!zipFile) {
+        throw new Error("Format Ditolak: Shapefile (.shp, .dbf, dll) wajib dimasukkan ke dalam satu file .zip sebelum di-upload.");
     }
+
+    // shp() otomatis akan membaca seluruh isi dalam zip (shp, dbf, prj)
+    const geojson = await shp(await readBuffer(zipFile));
 
     const collections = Array.isArray(geojson) ? geojson : [geojson];
     const items = [];
@@ -207,22 +140,26 @@ export const parseShapefiles = async (files) => {
             const props = { ...feature.properties } || {};
             const coords = g?.type === "Point" ? g.coordinates : g?.type === "MultiPoint" ? g.coordinates[0] : null;
 
-            // Cari nama dari properties
-            const namaKey = Object.keys(props).find((k) => ["nama_objek", "nama", "name", "nama_lokasi"].includes(k.toLowerCase()));
+            // Cari nama dari properties (SHP memotong nama kolom jadi max 10 huruf)
+            const namaKey = Object.keys(props).find((k) => ["nama objek", "nama_objek", "nama_obj"].includes(k.toLowerCase()));
             const nama = namaKey ? String(props[namaKey] ?? "") : "";
 
-            // Hapus nama dari atribut agar tidak double
             if (namaKey) delete props[namaKey];
+            
+            const xKey = Object.keys(props).find((k) => k.toLowerCase() === "x");
+            const yKey = Object.keys(props).find((k) => k.toLowerCase() === "y");
+            if (xKey) delete props[xKey];
+            if (yKey) delete props[yKey];
 
             items.push({
                 nama_objek: nama,
-                koordinat_x: coords?.[0] ?? null, // Longitude
-                koordinat_y: coords?.[1] ?? null, // Latitude
+                koordinat_x: coords?.[0] ?? null,
+                koordinat_y: coords?.[1] ?? null,
                 atribut: props,
             });
         }
     }
 
-    if (items.length === 0) throw new Error("Tidak ada data yang berhasil dibaca.");
+    if (items.length === 0) throw new Error("Tidak ada data yang berhasil dibaca dari file ZIP.");
     return items;
 };

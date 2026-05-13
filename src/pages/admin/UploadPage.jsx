@@ -58,7 +58,6 @@ export const UploadPage = () => {
         multiple: true,
         accept: {
             "application/zip": [".zip"],
-            "application/octet-stream": [".shp", ".dbf", ".prj", ".shx"],
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
             "application/vnd.ms-excel": [".xls"],
         },
@@ -226,7 +225,35 @@ export const UploadPage = () => {
                                 <input {...getInputProps()} />
                                 <Upload size={28} className="text-slate-300 mx-auto mb-3" />
                                 <p className="text-sm font-medium text-slate-700 mb-1">{isDragActive ? "Lepas file di sini..." : "Drag & drop atau klik untuk pilih"}</p>
-                                <p className="text-xs text-slate-400">.zip · .shp · .dbf · .prj · .xlsx · .xls</p>
+                                <p className="text-xs text-slate-400">.xlsx / .xls / .zip (Khusus Shapefile)</p>
+                            </div>
+                            {/* INFORMASI KETENTUAN UPLOAD */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+                                {/* Ketentuan Excel */}
+                                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm text-emerald-800">
+                                    <p className="font-bold flex items-center gap-1.5 mb-1.5">
+                                        <FileSpreadsheet size={15} className="text-emerald-600 flex-shrink-0" /> 
+                                        Ketentuan Excel (.xlsx / .xls)
+                                    </p>
+                                    <ul className="list-disc list-outside text-xs space-y-1.5 text-emerald-700 ml-4">
+                                        <li>Nama Kolom (Header) wajib berada tepat di <strong>Baris 1</strong>.</li>
+                                        <li>Isi data langsung dimulai dari <strong>Baris 2</strong> ke bawah.</li>
+                                        <li>Format <em>Merge Cells</em> (2 baris header) <strong>tidak didukung</strong> dan akan ditolak sistem.</li>
+                                    </ul>
+                                </div>
+
+                                {/* Ketentuan SHP */}
+                                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800">
+                                    <p className="font-bold flex items-center gap-1.5 mb-1.5">
+                                        <FileArchive size={15} className="text-blue-600 flex-shrink-0" /> 
+                                        Ketentuan Shapefile (SHP)
+                                    </p>
+                                    <ul className="list-disc list-outside text-xs space-y-1.5 text-blue-700 ml-4">
+                                        <li>Seluruh file komponen (<strong>.shp, .dbf, .shx, .prj</strong>) wajib disatukan ke dalam satu file <strong>.zip</strong>.</li>
+                                        <li>File .shp atau .dbf yang di-upload secara terpisah (satuan) <strong>akan ditolak</strong> oleh sistem.</li>
+                                        <li>Pastikan file <strong>.prj</strong> ikut di-zip agar posisi koordinat di peta akurat.</li>
+                                    </ul>
+                                </div>
                             </div>
 
                             {files.length > 0 && (

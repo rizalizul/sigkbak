@@ -7,37 +7,39 @@ export const useAuth = () => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const timerRef = useRef(null);
-    
-    // Tambahan: Ref untuk membatasi eksekusi event (Throttling)
     const throttleRef = useRef(null); 
 
     const logout = useCallback(async () => {
         clearTimeout(timerRef.current);
+        localStorage.removeItem("last_activity");
         await supabase.auth.signOut();
     }, []);
 
     const resetTimer = useCallback(() => {
         clearTimeout(timerRef.current);
+        
+        // CATAT WAKTU SEKARANG KE LOCAL STORAGE
+        localStorage.setItem("last_activity", Date.now().toString());
+
         timerRef.current = setTimeout(() => {
             supabase.auth.getSession().then(({ data: { session } }) => {
-                if (session) logout();
+                if (session) {
+                    alert("Sesi berakhir karena tidak ada aktivitas.");
+                    logout();
+                }
             });
         }, INACTIVITY_LIMIT);
     }, [logout]);
 
     // Track aktivitas user
     useEffect(() => {
-        // Jika belum login, tidak perlu pasang event listener (menghemat memori)
         if (!user) return; 
 
         const events = ["mousedown", "mousemove", "keydown", "scroll", "touchstart"];
         
         const handler = () => {
-            // Jika tidak ada antrean throttle, jalankan reset
             if (!throttleRef.current) {
                 resetTimer();
-                
-                // Kunci event selama 5 detik ke depan (agar tidak over-render)
                 throttleRef.current = setTimeout(() => {
                     throttleRef.current = null;
                 }, 5000); 
@@ -52,21 +54,42 @@ export const useAuth = () => {
         };
     }, [user, resetTimer]);
 
+    // PENGECEKAN SAAT WEB BARU DIBUKA
     useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setUser(session?.user ?? null);
-            if (session?.user) resetTimer();
-            setLoading(false);
-        });
+        const checkSession = async () => {
+            // 1. Cek apakah ada catatan waktu terakhir
+            const lastActivity = localStorage.getItem("last_activity");
+            
+            if (lastActivity) {
+                // Hitung selisih waktu sekarang dengan waktu terakhir
+                const timePassed = Date.now() - parseInt(lastActivity, 10);
+                
+                // Jika selisihnya lebih dari (meskipun laptop habis dimatikan)
+                if (timePassed > INACTIVITY_LIMIT) {
+                    await logout();
+                    setLoading(false);
+                    return;
+                }
+            }
+
+            supabase.auth.getSession().then(({ data: { session } }) => {
+                setUser(session?.user ?? null);
+                if (session?.user) resetTimer();
+                setLoading(false);
+            });
+        };
+
+        checkSession();
 
         const {
             data: { subscription },
-        } = supabase.auth.onAuthStateChange((_e, session) => {
+        } = supabase.auth.onAuthStateChange((event, session) => {
             setUser(session?.user ?? null);
             if (event === 'SIGNED_IN' && session?.user) {
                 resetTimer();
             } else if (!session?.user) {
                 clearTimeout(timerRef.current);
+                localStorage.removeItem("last_activity");
             }
         });
 
@@ -74,7 +97,7 @@ export const useAuth = () => {
             subscription.unsubscribe();
             clearTimeout(timerRef.current);
         };
-    }, [resetTimer]);
+    }, [resetTimer, logout]);
 
     return { user, loading, logout };
 };

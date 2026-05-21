@@ -41,9 +41,9 @@ sigkbak
 │  │  │  ├─ KBAKLayer.jsx
 │  │  │  ├─ MapControls.jsx
 │  │  │  ├─ MapView.jsx
-│  │  │  ├─ MeasureTool.jsx
 │  │  │  └─ PermalinkSync.jsx
 │  │  ├─ Sidebar
+│  │  │  ├─ FilterPanel.jsx
 │  │  │  ├─ LayerControl.jsx
 │  │  │  └─ PublicSidebar.jsx
 │  │  ├─ UI
@@ -68,6 +68,7 @@ sigkbak
 │  │  ├─ admin
 │  │  │  ├─ AdminLayout.jsx
 │  │  │  ├─ AuditPage.jsx
+│  │  │  ├─ ChangePasswordPage.jsx
 │  │  │  ├─ DashboardPage.jsx
 │  │  │  ├─ DataPage.jsx
 │  │  │  ├─ ExportPage.jsx
@@ -83,6 +84,7 @@ sigkbak
 │     ├─ markerUtils.js
 │     └─ parseFile.js
 ├─ tailwind.config.js
+├─ vercel.json
 └─ vite.config.js
 
 ```

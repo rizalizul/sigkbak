@@ -14,74 +14,61 @@ export const PublicMapPage = () => {
 
     const [activeJenisIds, setActiveJenisIds] = useState([]);
     const [showKBAK,       setShowKBAK]       = useState(false);
-    const [searchQuery,    setSearchQuery]    = useState("");
 
     const [attributeFilters, setAttributeFilters] = useState({
-        provinsi: [],
-        kota: [],
-        klasifikasi: []
+        provinsi: [], kota: [], klasifikasi: [],
     });
 
     const { data: objekData, filtered } = useObjekSpasial(activeJenisIds);
 
+    // Opsi filter dari data yang sudah di-load
     const attributeOptions = useMemo(() => {
         const provs = new Set();
         const kotas = new Set();
-        const klas = new Set();
-        
-        objekData.forEach(obj => {
-            if (obj.atribut?.Provinsi) provs.add(obj.atribut.Provinsi);
-            
-            // 🌟 Membaca Kab_Kota sesuai format Excel Anda
+        const klas  = new Set();
+        objekData.forEach((obj) => {
+            if (obj.atribut?.Provinsi)  provs.add(obj.atribut.Provinsi);
             const namaKota = obj.atribut?.Kab_Kota || obj.atribut?.Kabupaten || obj.atribut?.Kota;
             if (namaKota) kotas.add(namaKota);
-            
-            // 🌟 Membaca Klasifikasi Karst atau Jenis
-            const namaKlasifikasi = obj.atribut?.['Klasifikasi Karst'] || obj.atribut?.Jenis || obj.atribut?.Klasifikasi;
-            if (namaKlasifikasi) klas.add(namaKlasifikasi);
+            const namaKlas = obj.atribut?.["Klasifikasi Karst"] || obj.atribut?.Jenis || obj.atribut?.Klasifikasi;
+            if (namaKlas) klas.add(namaKlas);
         });
-        
-        return { 
-            provinsi: [...provs].sort(), 
-            kota: [...kotas].sort(), 
-            klasifikasi: [...klas].sort() 
+        return {
+            provinsi:    [...provs].sort(),
+            kota:        [...kotas].sort(),
+            klasifikasi: [...klas].sort(),
         };
     }, [objekData]);
 
-    // Fungsi Toggle Filter Atribut
     const handleToggleAttributeFilter = (category, value) => {
-        setAttributeFilters(prev => {
+        setAttributeFilters((prev) => {
             const current = prev[category];
-            const next = current.includes(value)
-                ? current.filter(item => item !== value)
-                : [...current, value];
-            return { ...prev, [category]: next };
+            return {
+                ...prev,
+                [category]: current.includes(value)
+                    ? current.filter((item) => item !== value)
+                    : [...current, value],
+            };
         });
     };
 
-    // Terapkan Filter Search DAN Filter Atribut ke Data Peta
+    // Terapkan filter atribut ke data
     const displayList = useMemo(() => {
         return filtered.filter((d) => {
-            let matchSearch = true;
-            if (searchQuery.trim()) {
-                const q = searchQuery.toLowerCase();
-                matchSearch = d.nama_objek?.toLowerCase().includes(q) || JSON.stringify(d.atribut)?.toLowerCase().includes(q);
-            }
+            const matchProvinsi = attributeFilters.provinsi.length === 0 ||
+                attributeFilters.provinsi.includes(d.atribut?.Provinsi);
 
-            const matchProvinsi = attributeFilters.provinsi.length === 0 || 
-                                  attributeFilters.provinsi.includes(d.atribut?.Provinsi);
-            
-            const namaKotaD = d.atribut?.Kab_Kota || d.atribut?.Kabupaten || d.atribut?.Kota;
-            const matchKota = attributeFilters.kota.length === 0 || 
-                              attributeFilters.kota.includes(namaKotaD);
+            const namaKota = d.atribut?.Kab_Kota || d.atribut?.Kabupaten || d.atribut?.Kota;
+            const matchKota = attributeFilters.kota.length === 0 ||
+                attributeFilters.kota.includes(namaKota);
 
-            const namaKlasD = d.atribut?.['Klasifikasi Karst'] || d.atribut?.Jenis || d.atribut?.Klasifikasi;
-            const matchKlasifikasi = attributeFilters.klasifikasi.length === 0 || 
-                                     attributeFilters.klasifikasi.includes(namaKlasD);
+            const namaKlas = d.atribut?.["Klasifikasi Karst"] || d.atribut?.Jenis || d.atribut?.Klasifikasi;
+            const matchKlas = attributeFilters.klasifikasi.length === 0 ||
+                attributeFilters.klasifikasi.includes(namaKlas);
 
-            return matchSearch && matchProvinsi && matchKota && matchKlasifikasi;
+            return matchProvinsi && matchKota && matchKlas;
         });
-    }, [filtered, searchQuery, attributeFilters]);
+    }, [filtered, attributeFilters]);
 
     const objekCount = useMemo(() => {
         const counts = {};
@@ -92,19 +79,21 @@ export const PublicMapPage = () => {
     }, [objekData]);
 
     const toggleJenis = (id) =>
-        setActiveJenisIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
-
-    if (jenisLoading)
-        return (
-            <div style={{ width: "100vw", height: "100vh" }} className="flex flex-col items-center justify-center bg-slate-50 gap-4">
-                <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center animate-pulse">
-                    <Map size={28} className="text-white" />
-                </div>
-                <p className="font-semibold text-slate-800 flex items-center gap-2">
-                    <Loader2 size={15} className="animate-spin" /> Memuat SIG KBAK Indonesia...
-                </p>
-            </div>
+        setActiveJenisIds((prev) =>
+            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
         );
+
+    if (jenisLoading) return (
+        <div style={{ width: "100vw", height: "100vh" }}
+            className="flex flex-col items-center justify-center bg-slate-50 gap-4">
+            <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center animate-pulse">
+                <Map size={28} className="text-white" />
+            </div>
+            <p className="font-semibold text-slate-800 flex items-center gap-2">
+                <Loader2 size={15} className="animate-spin" /> Memuat SIG KBAK Indonesia...
+            </p>
+        </div>
+    );
 
     return (
         <div style={{ position: "relative", width: "100vw", height: "100vh", overflow: "hidden" }}>
@@ -121,13 +110,10 @@ export const PublicMapPage = () => {
                 onToggleJenis={toggleJenis}
                 showKBAK={showKBAK}
                 onToggleKBAK={() => setShowKBAK((p) => !p)}
-                searchQuery={searchQuery}
-                onSearch={setSearchQuery}
                 totalObjek={objekData.length}
                 filteredObjek={displayList.length}
                 objekCount={objekCount}
                 user={user}
-                
                 attributeFilters={attributeFilters}
                 attributeOptions={attributeOptions}
                 onToggleAttributeFilter={handleToggleAttributeFilter}

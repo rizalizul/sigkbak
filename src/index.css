@@ -36,3 +36,16 @@
 .leaflet-popup-tip-container {
     display: none;
 }
+
+/* Mobile bottom sheet smooth scroll */
+@media (max-width: 767px) {
+    .leaflet-container {
+        /* Beri ruang untuk bottom sheet collapsed (72px) */
+        padding-bottom: 72px;
+    }
+}
+
+/* Prevent scroll leak saat sheet full */
+.sheet-full-open {
+    overflow: hidden;
+}

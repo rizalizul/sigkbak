@@ -46,11 +46,30 @@ export const buildPopupHTML = (d, isEditor = false) => {
     const ikon   = d.jenis_objek?.ikon  || "📍";
     const jenis  = d.jenis_objek?.nama  || "—";
     const isImage = ikon?.startsWith("http") || ikon?.includes("/");
-    const bgWarna = warna === "transparent" ? "#0d9488" : warna;
+    
+    const isTransparent = warna === "transparent";
+    const themeColor = isTransparent ? "#059669" : warna;  // Untuk teks, border, dan gradasi
+    
+    const headerBg = `linear-gradient(135deg, ${themeColor}15, ${themeColor}05)`;
+    const headerBorder = `1px solid ${themeColor}20`;
 
     const ikonHTML = isImage
         ? `<img src="${ikon}" style="width:12px;height:12px;object-fit:contain;vertical-align:middle;border-radius:50%;" />`
-        : `<span style="font-size:10px;">${ikon}</span>`;
+        : `<span style="font-size:11px;line-height:1;">${ikon}</span>`;
+
+    const badgeHTML = `
+    <div style="margin-bottom:6px;">
+        <span style="
+            display:inline-flex;align-items:center;gap:4px;
+            font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;
+            background:${themeColor}18;color:${themeColor};
+            border:1px solid ${themeColor}33;white-space:nowrap;flex-shrink:0;
+            text-transform:uppercase;letter-spacing:0.04em;
+        ">
+            ${ikonHTML}
+            <span>${jenis}</span>
+        </span>
+    </div>`;
 
     const coords = d.koordinat_y && d.koordinat_x
         ? `${parseFloat(d.koordinat_y).toFixed(5)}, ${parseFloat(d.koordinat_x).toFixed(5)}`
@@ -58,7 +77,6 @@ export const buildPopupHTML = (d, isEditor = false) => {
 
     const fotoUrl = d.atribut?.Foto || d.atribut?.foto || d.atribut?.foto_url || d.atribut?.Foto_URL || null;
 
-    // Kumpulkan atribut yang ada nilainya, kecuali Foto
     const SKIP_KEYS = new Set(["foto", "foto_url", "Foto", "Foto_URL", "photo", "Photo"]);
     const validEntries = d.atribut
         ? Object.entries(d.atribut).filter(([k, v]) =>
@@ -67,18 +85,15 @@ export const buildPopupHTML = (d, isEditor = false) => {
         )
         : [];
 
-    // Pisahkan atribut pendek (≤20 char) dan panjang (>20 char)
     const shortEntries = validEntries.filter(([, v]) => String(v).length <= 20);
     const longEntries  = validEntries.filter(([, v]) => String(v).length  > 20);
 
-    // Helper render label + value
     const labelStyle = "font-size:10px;color:#94a3b8;margin:0 0 1px;text-transform:uppercase;letter-spacing:0.04em;";
     const valueStyle = "font-size:12px;color:#1e293b;margin:0;font-weight:500;word-break:break-word;";
     const borderB    = "border-bottom:0.5px solid #f1f5f9;";
 
     const renderShortGrid = (entries) => {
         if (!entries.length) return "";
-        // Pasangkan 2 per baris
         let rows = "";
         for (let i = 0; i < entries.length; i += 2) {
             const [k1, v1] = entries[i];
@@ -122,33 +137,25 @@ export const buildPopupHTML = (d, isEditor = false) => {
         </a>`
         : "";
 
-    // ── Dengan foto: foto jadi hero image ──────────────
+    // ── Dengan foto ──────────────
     if (fotoUrl) {
         return `
-        <div style="font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;background:white;border-radius:12px;overflow:hidden;width:280px;">
-            <!-- Hero foto -->
+        <div style="font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;background:white;border-radius:12px;overflow:hidden;width:100%;min-width:291px;">
             <div style="position:relative;height:140px;overflow:hidden;">
                 <img src="${fotoUrl}" style="width:100%;height:100%;object-fit:cover;" />
                 <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.25) 0%,transparent 50%);" />
                 ${editBtn}
             </div>
 
-            <!-- Header: jenis + nama -->
-            <div style="padding:10px 14px 8px;border-bottom:0.5px solid #f1f5f9;">
-                <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;">
-                    <div style="width:16px;height:16px;background:${bgWarna};border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                        ${ikonHTML}
-                    </div>
-                    <span style="font-size:10px;font-weight:600;color:${bgWarna};letter-spacing:0.03em;text-transform:uppercase;">${jenis}</span>
-                </div>
+            <div style="padding:12px 14px 10px;background:${headerBg};border-bottom:${headerBorder};">
+                ${badgeHTML}
                 <h3 style="font-size:14px;font-weight:600;color:#0f172a;margin:0;line-height:1.3;">${d.nama_objek || "Tanpa Nama"}</h3>
             </div>
 
-            <!-- Body -->
             <div style="padding:8px 14px 10px;">
                 ${coords ? `
                 <div style="display:flex;align-items:center;gap:7px;padding:5px 8px;background:#f8fafc;border-radius:8px;margin-bottom:7px;">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${bgWarna}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${themeColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                     <span style="font-size:11px;color:#64748b;font-family:ui-monospace,monospace;">${coords}</span>
                 </div>` : ""}
                 ${renderShortGrid(shortEntries)}
@@ -159,17 +166,11 @@ export const buildPopupHTML = (d, isEditor = false) => {
 
     // ── Tanpa foto ──────────────────────────────────────
     return `
-    <div style="font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;background:white;border-radius:12px;overflow:hidden;width:280px;">
-        <!-- Header: strip warna + nama + edit btn -->
-        <div style="position:relative;padding:12px 14px 10px;background:${bgWarna}10;border-bottom:0.5px solid ${bgWarna}20;">
-            <div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;">
-                <div style="width:18px;height:18px;background:${bgWarna};border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    ${ikonHTML}
-                </div>
-                <span style="font-size:10px;font-weight:600;color:${bgWarna};letter-spacing:0.03em;text-transform:uppercase;">${jenis}</span>
-            </div>
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;background:white;border-radius:12px;overflow:hidden;width:100%;min-width:291px;">
+        
+        <div style="position:relative;padding:12px 14px 10px;background:${headerBg};border-bottom:${headerBorder};">
+            ${badgeHTML}
             <h3 style="font-size:14px;font-weight:600;color:#0f172a;margin:0;line-height:1.3;padding-right:${isEditor ? "36px" : "0"};">${d.nama_objek || "Tanpa Nama"}</h3>
-            <!-- Tombol edit pojok kanan atas header -->
             ${isEditor ? `
             <a href="/admin/data?edit=${d.id}"
                 style="position:absolute;top:10px;right:10px;
@@ -188,11 +189,10 @@ export const buildPopupHTML = (d, isEditor = false) => {
             </a>` : ""}
         </div>
 
-        <!-- Body -->
         <div style="padding:8px 14px 10px;">
             ${coords ? `
             <div style="display:flex;align-items:center;gap:7px;padding:5px 8px;background:#f8fafc;border-radius:8px;margin-bottom:7px;">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${bgWarna}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${themeColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                 <span style="font-size:11px;color:#64748b;font-family:ui-monospace,monospace;">${coords}</span>
             </div>` : ""}
             ${renderShortGrid(shortEntries)}

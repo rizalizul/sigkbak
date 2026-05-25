@@ -1,17 +1,16 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useMap, CircleMarker, Popup } from "react-leaflet";
-import { Search, X, Loader2, MapPin, Navigation, Database } from "lucide-react";
+import { useMap } from "react-leaflet";
+import { Search, X, Loader2, MapPin, Database } from "lucide-react";
 import L from "leaflet";
 import { supabase } from "../../lib/supabase";
 
 export const GeoSearch = () => {
     const map = useMap();
-    const [query,      setQuery]      = useState("");
+    const [query,       setQuery]      = useState("");
     const [geoResults, setGeoResults] = useState([]);
     const [objResults, setObjResults] = useState([]);
     const [loading,    setLoading]    = useState(false);
     const [open,       setOpen]       = useState(false);
-    const [myLocation, setMyLocation] = useState(null);
     const debounceRef  = useRef(null);
     const containerRef = useRef(null);
 
@@ -124,44 +123,25 @@ export const GeoSearch = () => {
 
     const clear = () => { setQuery(""); setGeoResults([]); setObjResults([]); setOpen(false); };
 
-    const goToMyLocation = () => {
-        if (!navigator.geolocation) { alert("Geolocation tidak didukung browser ini"); return; }
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                const coords = [pos.coords.latitude, pos.coords.longitude];
-                setMyLocation(coords);
-                map.flyTo(coords, 16, { animate: true });
-            },
-            () => alert("Gagal mendapatkan lokasi. Pastikan izin GPS aktif."),
-            { enableHighAccuracy: true }
-        );
-    };
-
     const hasResults = objResults.length > 0 || geoResults.length > 0;
 
     return (
         <div ref={containerRef} className="relative">
-            <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                    <input
-                        type="text"
-                        value={query}
-                        onChange={handleChange}
-                        onKeyDown={handleKeyDown}
-                        onFocus={() => hasResults && setOpen(true)}
-                        placeholder="Cari objek atau lokasi..."
-                        className="w-full pl-9 pr-8 py-2.5 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl text-sm placeholder-slate-400 shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-                    />
-                    {loading
-                        ? <Loader2 size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 animate-spin" />
-                        : query && <button onClick={clear} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"><X size={13} /></button>
-                    }
-                </div>
-                <button onClick={goToMyLocation} title="Lokasi saya"
-                    className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl text-slate-500 hover:bg-slate-50 shadow-md transition-all">
-                    <Navigation size={14} />
-                </button>
+            <div className="relative w-full">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <input
+                    type="text"
+                    value={query}
+                    onChange={handleChange}
+                    onKeyDown={handleKeyDown}
+                    onFocus={() => hasResults && setOpen(true)}
+                    placeholder="Cari objek atau lokasi..."
+                    className="w-full pl-9 pr-8 py-2.5 bg-white/95 backdrop-blur-sm border border-slate-200 rounded-xl text-sm placeholder-slate-400 shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                />
+                {loading
+                    ? <Loader2 size={13} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 animate-spin" />
+                    : query && <button onClick={clear} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"><X size={13} /></button>
+                }
             </div>
 
             {/* Dropdown hasil */}
@@ -223,22 +203,6 @@ export const GeoSearch = () => {
                         <p className="text-xs text-slate-400">Tekan <kbd className="bg-slate-200 px-1.5 py-0.5 rounded font-mono text-slate-600">Enter</kbd> untuk hasil teratas</p>
                     </div>
                 </div>
-            )}
-
-            {/* Titik lokasi saya */}
-            {myLocation && (
-                <CircleMarker center={myLocation} radius={8}
-                    pathOptions={{ fillColor: "#3b82f6", color: "white", weight: 2, fillOpacity: 1 }}>
-                    <Popup closeButton={false} offset={[0, -5]}>
-                        <div className="flex items-center gap-2 px-1 py-0.5">
-                            <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-600" />
-                            </span>
-                            <span className="text-xs font-semibold text-slate-700 whitespace-nowrap">Posisi Anda Saat Ini</span>
-                        </div>
-                    </Popup>
-                </CircleMarker>
             )}
         </div>
     );

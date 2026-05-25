@@ -122,7 +122,7 @@ export const buildPopupHTML = (d, isEditor = false) => {
 
     const editBtn = isEditor
         ? `<a href="/admin/data?edit=${d.id}"
-            style="position:absolute;top:10px;right:10px;
+            style="position:absolute;top:10px;right:20px;
                    width:28px;height:28px;
                    background:rgba(255,255,255,0.92);
                    border:0.5px solid rgba(0,0,0,0.12);
@@ -173,7 +173,7 @@ export const buildPopupHTML = (d, isEditor = false) => {
             <h3 style="font-size:14px;font-weight:600;color:#0f172a;margin:0;line-height:1.3;padding-right:${isEditor ? "36px" : "0"};">${d.nama_objek || "Tanpa Nama"}</h3>
             ${isEditor ? `
             <a href="/admin/data?edit=${d.id}"
-                style="position:absolute;top:10px;right:10px;
+                style="position:absolute;top:10px;right:20px;
                        width:28px;height:28px;
                        background:white;
                        border:0.5px solid #e2e8f0;

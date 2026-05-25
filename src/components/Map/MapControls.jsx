@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { useMap } from "react-leaflet";
+import { useMap, CircleMarker, Popup } from "react-leaflet";
 import { TileLayer } from "react-leaflet";
-import { Layers, Plus, Minus, Crosshair, Square, Ruler, Share2, Check } from "lucide-react";
+import { Layers, Plus, Minus, Crosshair, Navigation, Square, Ruler, Share2, Check } from "lucide-react";
 import { TILE_LAYERS } from "../../constants/mapConfig";
 import L from "leaflet";
 
@@ -186,12 +186,26 @@ export const MapControls = () => {
     const [showTileMenu,  setShowTileMenu]  = useState(false);
     const [boxZoomActive, setBoxZoomActive] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [myLocation, setMyLocation] = useState(null);
 
     const handleShare = () => {
         navigator.clipboard.writeText(window.location.href).then(() => {
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         });
+    };
+
+    const goToMyLocation = () => {
+        if (!navigator.geolocation) { alert("Geolocation tidak didukung browser ini"); return; }
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const coords = [pos.coords.latitude, pos.coords.longitude];
+                setMyLocation(coords);
+                map.flyTo(coords, 16, { animate: true });
+            },
+            () => alert("Gagal mendapatkan lokasi. Pastikan izin GPS aktif."),
+            { enableHighAccuracy: true }
+        );
     };
 
     const { measureMode, measureResult, activateMeasure, cancelMeasure, clearMeasure } = useMeasure(map);
@@ -234,17 +248,29 @@ export const MapControls = () => {
 
             {/* Kontrol kanan atas */}
             <div className="absolute top-20 right-4 z-[1000] flex flex-col gap-1">
-                {/* Zoom */}
-                {[
-                    { icon: Plus,      action: () => map.setZoom(map.getZoom() + 1), title: "Zoom In" },
-                    { icon: Minus,     action: () => map.setZoom(map.getZoom() - 1), title: "Zoom Out" },
-                    { icon: Crosshair, action: () => map.setView([-2.5, 118.0], 5),  title: "Pusat Indonesia" },
-                ].map(({ icon: Icon, action, title }) => (
-                    <button key={title} onClick={action} title={title}
-                        className="w-9 h-9 bg-white/95 backdrop-blur-sm rounded-xl shadow-md border border-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all">
-                        <Icon size={15} />
-                    </button>
-                ))}
+                {/* Zoom dan Lokasi */}
+                <button onClick={() => map.setZoom(map.getZoom() + 1)} title="Zoom In"
+                    className="w-9 h-9 bg-white/95 backdrop-blur-sm rounded-xl shadow-md border border-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all">
+                    <Plus size={15} />
+                </button>
+                <button onClick={() => map.setZoom(map.getZoom() - 1)} title="Zoom Out"
+                    className="w-9 h-9 bg-white/95 backdrop-blur-sm rounded-xl shadow-md border border-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all">
+                    <Minus size={15} />
+                </button>
+                
+                <button onClick={() => map.setView([-2.5, 118.0], 5)} title="Pusat Indonesia"
+                    className="w-9 h-9 bg-white/95 backdrop-blur-sm rounded-xl shadow-md border border-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all">
+                    <Crosshair size={15} />
+                </button>
+
+                {/* Tombol Lokasi Saya */}
+                <button onClick={goToMyLocation} title="Lokasi saya"
+                    className="w-9 h-9 bg-white/95 backdrop-blur-sm rounded-xl shadow-md border border-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all">
+                    <Navigation size={14} />
+                </button>
+
+                {/* Separator */}
+                <div className="h-px bg-slate-200 mx-1 my-0.5" />
 
                 {/* Box Zoom */}
                 <button onClick={() => { setBoxZoomActive((p) => !p); if (measureMode) cancelMeasure(); }}
@@ -252,9 +278,6 @@ export const MapControls = () => {
                     className={`w-9 h-9 backdrop-blur-sm rounded-xl shadow-md border flex items-center justify-center transition-all ${boxZoomActive ? "bg-slate-900 text-white border-slate-900 ring-2 ring-slate-400" : "bg-white/95 border-slate-100 text-slate-600 hover:bg-slate-50"}`}>
                     <Square size={14} />
                 </button>
-
-                {/* Separator */}
-                <div className="h-px bg-slate-200 mx-1 my-0.5" />
 
                 {/* Ukur Jarak */}
                 <button 
@@ -283,7 +306,7 @@ export const MapControls = () => {
                 {/* Separator Baru */}
                 <div className="h-px bg-slate-200 mx-1 my-0.5" />
 
-                {/* 🌟 Tombol Bagikan Peta */}
+                {/* Tombol Bagikan Peta */}
                 <button 
                     onClick={handleShare}
                     title={copied ? "Link berhasil disalin!" : "Bagikan tampilan peta ini"}
@@ -311,6 +334,22 @@ export const MapControls = () => {
                     </div>
                 )}
             </div>
+
+            {/* Titik lokasi saya */}
+            {myLocation && (
+                <CircleMarker center={myLocation} radius={8}
+                    pathOptions={{ fillColor: "#3b82f6", color: "white", weight: 2, fillOpacity: 1 }}>
+                    <Popup closeButton={false} offset={[0, -5]}>
+                        <div className="flex items-center gap-2 px-1 py-0.5">
+                            <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-600" />
+                            </span>
+                            <span className="text-xs font-semibold text-slate-700 whitespace-nowrap">Posisi Anda Saat Ini</span>
+                        </div>
+                    </Popup>
+                </CircleMarker>
+            )}
         </>
     );
 };

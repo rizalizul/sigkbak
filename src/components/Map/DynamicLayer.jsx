@@ -42,31 +42,29 @@ export const DynamicLayer = ({ objekList, isEditor = false }) => {
             
             const marker = L.marker([lat, lon], { icon: createMarkerIcon(warna, ikon) });
 
-            // Geser kamera agar marker berada di bawah
+            // Geser kamera otomatis yang responsif (Mobile & Desktop)
             marker.on("click", (e) => {
                 setTimeout(() => {
                     const container = map.getContainer();
                     const h = container.offsetHeight;
                     const w = container.offsetWidth;
 
-                    // 1. Tentukan batas area yang tertutup Sidebar (asumsi 300px)
-                    const sidebarWidth = 300;
-
-                    // 2. Tentukan target posisi marker di area yang "aman"
-                    // Horizontal: letakkan di tengah-tengah sisa ruang (Layar dikurangi Sidebar)
-                    const targetX = ((w - sidebarWidth) / 2) + sidebarWidth;
+                    // 1. Deteksi apakah ini layar HP (lebar < 768px)
+                    const isMobile = w < 768;
                     
-                    // Vertical: dorong ke 85% tinggi layar (sangat bawah)
-                    // agar pop-up yang panjang punya ruang ke atas tanpa menabrak Search Bar
-                    const targetY = h * 0.85;
+                    // Jika di HP, sidebar tertutup/menumpuk penuh, jadi set 0. Jika desktop, pakai 320px.
+                    const sidebarWidth = isMobile ? 0 : 320; 
+
+                    // 2. Penentuan target posisi X dan Y
+                    // Jika HP, letakkan persis di tengah layar. Jika desktop, perhitungkan sidebar.
+                    const targetX = isMobile ? (w / 2) : ((w - sidebarWidth) / 2) + sidebarWidth;
+                    
+                    const targetY = isMobile ? (h * 0.6) : (h * 0.85);
 
                     const targetPoint = L.point(targetX, targetY);
-
-                    // 3. Hitung selisih posisi saat ini dengan target
                     const markerPoint = map.latLngToContainerPoint(e.latlng);
                     const offset = markerPoint.subtract(targetPoint);
 
-                    // 4. Eksekusi pergeseran peta
                     map.panBy(offset, { animate: true, duration: 0.6 });
                 }, 50);
             });
@@ -74,9 +72,7 @@ export const DynamicLayer = ({ objekList, isEditor = false }) => {
             marker.bindPopup(buildPopupHTML(d, isEditor), { 
                 maxWidth: 300, 
                 minWidth: 290,
-                autoPanPaddingTopLeft: [350, 150], 
-                autoPanPaddingBottomRight: [20, 20],
-                autoPan: true
+                autoPan: false 
             });
             
             cluster.addLayer(marker);

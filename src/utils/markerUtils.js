@@ -48,7 +48,7 @@ export const buildPopupHTML = (d, isEditor = false) => {
     const isImage = ikon?.startsWith("http") || ikon?.includes("/");
     
     const isTransparent = warna === "transparent";
-    const themeColor = isTransparent ? "#059669" : warna;  // Untuk teks, border, dan gradasi
+    const themeColor = isTransparent ? "#059669" : warna; 
     
     const headerBg = `linear-gradient(135deg, ${themeColor}15, ${themeColor}05)`;
     const headerBorder = `1px solid ${themeColor}20`;
@@ -63,7 +63,7 @@ export const buildPopupHTML = (d, isEditor = false) => {
             display:inline-flex;align-items:center;gap:4px;
             font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;
             background:${themeColor}18;color:${themeColor};
-            border:1px solid ${themeColor}33;white-space:nowrap;flex-shrink:0;
+            border:1px solid ${themeColor}33;white-space:nowrap;
             text-transform:uppercase;letter-spacing:0.04em;
         ">
             ${ikonHTML}
@@ -76,7 +76,11 @@ export const buildPopupHTML = (d, isEditor = false) => {
         : null;
 
     const fotoUrl = d.atribut?.Foto || d.atribut?.foto || d.atribut?.foto_url || d.atribut?.Foto_URL || null;
+    const optimizedFotoUrl = fotoUrl && fotoUrl.includes("cloudinary.com") 
+    ? fotoUrl.replace("/upload/", "/upload/f_auto,q_auto,w_600,c_limit/") 
+    : fotoUrl;
 
+    // Foto tidak usah ditampilkan dua kali (di header dan di list atribut), jadi kita "skip" key-nya
     const SKIP_KEYS = new Set(["foto", "foto_url", "Foto", "Foto_URL", "photo", "Photo"]);
     const validEntries = d.atribut
         ? Object.entries(d.atribut).filter(([k, v]) =>
@@ -122,13 +126,15 @@ export const buildPopupHTML = (d, isEditor = false) => {
 
     const editBtn = isEditor
         ? `<a href="/admin/data?edit=${d.id}"
-            style="position:absolute;top:10px;right:20px;
+            style="position:absolute;top:10px;right:14px;
                    width:28px;height:28px;
-                   background:rgba(255,255,255,0.92);
+                   background:rgba(255,255,255,0.95);
                    border:0.5px solid rgba(0,0,0,0.12);
                    border-radius:8px;
                    display:flex;align-items:center;justify-content:center;
-                   text-decoration:none;cursor:pointer;"
+                   text-decoration:none;cursor:pointer;
+                   z-index:20;
+                   box-shadow:0 2px 6px rgba(0,0,0,0.15);"
             title="Edit objek ini">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -140,19 +146,30 @@ export const buildPopupHTML = (d, isEditor = false) => {
     // ── Dengan foto ──────────────
     if (fotoUrl) {
         return `
-        <div style="font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;background:white;border-radius:12px;overflow:hidden;width:100%;min-width:291px;">
-            <div style="position:relative;height:140px;overflow:hidden;">
-                <img src="${fotoUrl}" style="width:100%;height:100%;object-fit:cover;" />
-                <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.25) 0%,transparent 50%);" />
+        <div style="font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;background:white;border-radius:12px;overflow:hidden;width:100%;min-width:291px;display:flex;flex-direction:column;">
+            
+            <div style="position:relative;height:150px;background:#0f172a;width:100%;overflow:hidden;">
+                
+                <img src="${optimizedFotoUrl}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:blur(12px);opacity:0.6;transform:scale(1.1);" />
+                
+                <a href="${fotoUrl}" target="_blank" rel="noopener noreferrer" style="position:absolute;inset:0;z-index:10;display:block;" title="Klik untuk lihat foto penuh">
+                    <img src="${optimizedFotoUrl}" style="width:100%;height:100%;object-fit:contain;" loading="lazy" onerror="this.style.display='none'" />
+                    
+                    <div style="position:absolute;bottom:8px;left:8px;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);color:white;border-radius:6px;padding:4px 8px;display:flex;align-items:center;gap:4px;font-size:10px;font-weight:500;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg>
+                        Perbesar
+                    </div>
+                </a>
+
                 ${editBtn}
             </div>
 
-            <div style="padding:12px 14px 10px;background:${headerBg};border-bottom:${headerBorder};">
+            <div style="padding:12px 14px 10px;background:${headerBg};border-bottom:${headerBorder};flex-shrink:0;">
                 ${badgeHTML}
-                <h3 style="font-size:14px;font-weight:600;color:#0f172a;margin:0;line-height:1.3;">${d.nama_objek || "Tanpa Nama"}</h3>
+                <h3 style="font-size:14px;font-weight:600;color:#0f172a;margin:0;line-height:1.3;padding-right:${isEditor ? "36px" : "0"};">${d.nama_objek || "Tanpa Nama"}</h3>
             </div>
 
-            <div style="padding:8px 14px 10px;">
+            <div style="padding:8px 14px 10px; max-height:200px; overflow-y:auto;" class="custom-scrollbar">
                 ${coords ? `
                 <div style="display:flex;align-items:center;gap:7px;padding:5px 8px;background:#f8fafc;border-radius:8px;margin-bottom:7px;">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${themeColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
@@ -160,6 +177,7 @@ export const buildPopupHTML = (d, isEditor = false) => {
                 </div>` : ""}
                 ${renderShortGrid(shortEntries)}
                 ${renderLongList(longEntries)}
+                ${!coords && !validEntries.length ? `<p style="font-size:12px;color:#94a3b8;text-align:center;padding:8px 0;margin:0;">Tidak ada atribut tersedia</p>` : ""}
             </div>
         </div>`;
     }
@@ -167,29 +185,13 @@ export const buildPopupHTML = (d, isEditor = false) => {
     // ── Tanpa foto ──────────────────────────────────────
     return `
     <div style="font-family:-apple-system,BlinkMacSystemFont,'Inter',sans-serif;background:white;border-radius:12px;overflow:hidden;width:100%;min-width:291px;">
-        
         <div style="position:relative;padding:12px 14px 10px;background:${headerBg};border-bottom:${headerBorder};">
             ${badgeHTML}
             <h3 style="font-size:14px;font-weight:600;color:#0f172a;margin:0;line-height:1.3;padding-right:${isEditor ? "36px" : "0"};">${d.nama_objek || "Tanpa Nama"}</h3>
-            ${isEditor ? `
-            <a href="/admin/data?edit=${d.id}"
-                style="position:absolute;top:10px;right:20px;
-                       width:28px;height:28px;
-                       background:white;
-                       border:0.5px solid #e2e8f0;
-                       border-radius:8px;
-                       display:flex;align-items:center;justify-content:center;
-                       text-decoration:none;cursor:pointer;
-                       box-shadow:0 1px 3px rgba(0,0,0,0.06);"
-                title="Edit objek ini">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                </svg>
-            </a>` : ""}
+            ${editBtn}
         </div>
 
-        <div style="padding:8px 14px 10px;">
+        <div style="padding:8px 14px 10px; max-height:240px; overflow-y:auto;" class="custom-scrollbar">
             ${coords ? `
             <div style="display:flex;align-items:center;gap:7px;padding:5px 8px;background:#f8fafc;border-radius:8px;margin-bottom:7px;">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${themeColor}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>

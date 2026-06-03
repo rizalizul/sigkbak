@@ -52,7 +52,7 @@ export const DashboardPage = () => {
                 counts[key].count++;
             });
 
-            // 🌟 Persiapkan data untuk Pie Chart
+            // Persiapkan data untuk Pie Chart
             const chartData = Object.values(counts)
                 .sort((a, b) => b.count - a.count)
                 .map(j => ({
@@ -95,7 +95,7 @@ export const DashboardPage = () => {
                 ))}
             </div>
 
-            {/* 🌟 Area Analitik: Pie Chart & Progress Bar Bersebelahan */}
+            {/* Area Analitik: Pie Chart & Progress Bar Bersebelahan */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Kiri: Pie Chart */}
                 <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 flex flex-col">

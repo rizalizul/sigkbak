@@ -5,7 +5,8 @@ import { useObjekSpasial } from "../../hooks/useObjekSpasial";
 import { supabase } from "../../lib/supabase";
 import { AtributEditor } from "../../components/UI/AtributEditor";
 import { MapPickerModal } from "../../components/UI/MapPickerModal";
-import { Search, Trash2, ChevronDown, ChevronUp, Filter, Loader2, Plus, Pencil, X, Save, MapPin, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Trash2, ChevronDown, ChevronUp, Filter, Loader2, Plus, Pencil, X, Save, MapPin, ChevronLeft, ChevronRight, UploadCloud, Image as ImageIcon } from "lucide-react";
+import { uploadImageToCloudinary } from "../../utils/uploadUtils";
 
 const ObjekForm = ({ initial = {}, jenisList, onSave, onCancel, saving }) => {
     const [form, setForm] = useState({
@@ -15,9 +16,77 @@ const ObjekForm = ({ initial = {}, jenisList, onSave, onCancel, saving }) => {
         koordinat_y: initial.koordinat_y ?? "",
         atribut: initial.atribut ?? {},
     });
+    
     const [showMapPicker, setShowMapPicker] = useState(false);
+    const [isUploadingPhoto, setIsUploadingPhoto] = useState(false); // State loading foto
+    
     const atributEditorRef = useRef(null);
     const set = (key, val) => setForm((p) => ({ ...p, [key]: val }));
+
+    // Ekstraksi URL foto saat ini (mencari di atribut)
+    const currentPhoto = form.atribut?.Foto || form.atribut?.foto || form.atribut?.foto_url || null;
+
+    // Fungsi Upload Foto ke Cloudinary
+    const handlePhotoUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Validasi ukuran maksimal 5MB
+        if (file.size > 5 * 1024 * 1024) {
+            alert("Ukuran foto terlalu besar. Maksimal 5MB.");
+            return;
+        }
+
+        setIsUploadingPhoto(true);
+        try {
+            const imageUrl = await uploadImageToCloudinary(file);
+            
+            // Otomatis masukkan link URL ke dalam JSON Atribut dengan key "Foto"
+            setForm((prev) => ({
+                ...prev,
+                atribut: {
+                    ...prev.atribut,
+                    Foto: imageUrl
+                }
+            }));
+        } catch (error) {
+            alert("Gagal mengunggah foto. Pastikan koneksi internet dan pengaturan Cloudinary sudah benar.");
+        } finally {
+            setIsUploadingPhoto(false);
+        }
+    };
+
+    // Fungsi Hapus Foto
+    const handleRemovePhoto = () => {
+        setForm((prev) => {
+            const newAtribut = { ...prev.atribut };
+            // Hapus semua variasi key foto agar bersih
+            delete newAtribut.Foto;
+            delete newAtribut.foto;
+            delete newAtribut.foto_url;
+            return { ...prev, atribut: newAtribut };
+        });
+    };
+
+    const handleCancelClick = () => {
+        // 1. Jika masih loading upload
+        if (isUploadingPhoto) {
+            const yakin = window.confirm("Proses unggah foto sedang berjalan. Yakin ingin membatalkan?");
+            if (!yakin) return;
+        } 
+        // 2. Jika ada foto di form, cek apakah itu foto baru
+        else if (currentPhoto) {
+            const initialPhoto = initial.atribut?.Foto || initial.atribut?.foto || initial.atribut?.foto_url;
+            // Jika currentPhoto tidak sama dengan initialPhoto, berarti Admin baru saja mengunggah foto baru
+            if (currentPhoto !== initialPhoto) {
+                const yakin = window.confirm("Anda sudah mengunggah foto baru. Jika dibatalkan, foto tidak akan tertaut ke objek ini. Yakin ingin batal?");
+                if (!yakin) return;
+            }
+        }
+        
+        // Lanjut eksekusi pembatalan jika aman
+        onCancel();
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -37,9 +106,7 @@ const ObjekForm = ({ initial = {}, jenisList, onSave, onCancel, saving }) => {
                     <select value={form.jenis_id} onChange={(e) => set("jenis_id", e.target.value)} required className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-slate-800">
                         <option value="">Pilih jenis...</option>
                         {jenisList.map((j) => (
-                            <option key={j.id} value={j.id}>
-                                {j.nama}
-                            </option>
+                            <option key={j.id} value={j.id}>{j.nama}</option>
                         ))}
                     </select>
                 </div>
@@ -75,18 +142,69 @@ const ObjekForm = ({ initial = {}, jenisList, onSave, onCancel, saving }) => {
                     </div>
                 </div>
 
+                {/* FITUR UPLOAD FOTO */}
+                <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-2">Foto Lapangan (Opsional)</label>
+                    {currentPhoto ? (
+                        // Perbaikan UI: bg-slate-900 (gelap) dan object-contain agar foto utuh
+                        <div className="relative w-full h-48 rounded-xl overflow-hidden border border-slate-200 group bg-slate-900 flex items-center justify-center shadow-inner">
+                            <img src={currentPhoto} alt="Preview Foto" className="w-full h-full object-contain" />
+                            {/* Overlay Hitam saat di-hover */}
+                            <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3 backdrop-blur-sm">
+                                <a href={currentPhoto} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-white text-slate-700 rounded-lg text-xs font-medium hover:bg-slate-50 flex items-center gap-1.5">
+                                    <ImageIcon size={14} /> Lihat Penuh
+                                </a>
+                                <button type="button" onClick={handleRemovePhoto} className="px-3 py-1.5 bg-rose-500 text-white rounded-lg text-xs font-medium hover:bg-rose-600 flex items-center gap-1.5">
+                                    <Trash2 size={14} /> Hapus Foto
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="relative border-2 border-dashed border-slate-300 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:bg-slate-50 transition-colors">
+                            <input 
+                                type="file" 
+                                accept="image/jpeg, image/png, image/webp"
+                                onChange={handlePhotoUpload} 
+                                disabled={isUploadingPhoto}
+                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed" 
+                            />
+                            {isUploadingPhoto ? (
+                                <>
+                                    <Loader2 size={24} className="text-emerald-500 animate-spin mb-2" />
+                                    <p className="text-sm font-medium text-emerald-600">Mengunggah ke server...</p>
+                                </>
+                            ) : (
+                                <>
+                                    <UploadCloud size={24} className="text-slate-400 mb-2" />
+                                    <p className="text-sm font-medium text-slate-700">Klik atau drag foto ke sini</p>
+                                    <p className="text-xs text-slate-400 mt-1">Maksimal 5MB (Hanya JPG, PNG, WebP)</p>
+                                    {/* Perbaikan UI: Badge ketentuan rasio ideal */}
+                                    <div className="mt-1.5">
+                                        <span className="text-[10px] text-slate-500 font-medium bg-slate-200/60 px-2.5 py-0.5 rounded-md border border-slate-200">
+                                            Rasio ideal: Landscape (16:9 atau 4:3)
+                                        </span>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
+                </div>
+
                 {/* Atribut */}
                 <div>
-                    <label className="block text-xs font-medium text-slate-600 mb-2">Atribut Tambahan</label>
+                    <div className="flex items-center justify-between mb-2">
+                        <label className="block text-xs font-medium text-slate-600">Atribut Tambahan</label>
+                        {currentPhoto && <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded font-medium">1 Foto Tersimpan</span>}
+                    </div>
                     <div className="border border-slate-200 rounded-xl p-3 bg-slate-50">
                         <AtributEditor ref={atributEditorRef} value={form.atribut} onChange={(val) => set("atribut", val)} />
                     </div>
                 </div>
 
-                <div className="flex gap-2">
-                    <button type="button" onClick={onCancel} className="flex-1 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors">Batal</button>
-                    <button type="submit" disabled={saving} className="flex-1 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-slate-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
-                        {saving ? <><Loader2 size={14} className="animate-spin" /> Menyimpan...</> : <><Save size={14} /> Simpan</>}
+                <div className="flex gap-2 pt-2">
+                    <button type="button" onClick={handleCancelClick} className="flex-1 py-2.5 border border-slate-200 text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors">Batal</button>
+                    <button type="submit" disabled={saving || isUploadingPhoto} className="flex-1 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-slate-700 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
+                        {saving ? <><Loader2 size={14} className="animate-spin" /> Menyimpan...</> : <><Save size={14} /> Simpan Objek</>}
                     </button>
                 </div>
             </form>
@@ -267,7 +385,6 @@ export const DataPage = () => {
                                 key={j.id}
                                 onClick={() => toggleJenisFilter(j.id)}
                                 className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border font-medium transition-all ${active ? "text-slate-800 border-slate-400 bg-slate-100 shadow-inner" : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"}`}
-                                // Hapus background color dinamis agar tombol filter tetap rapi (terutama jika warnanya transparan)
                             >
                                 {isImage ? (
                                     <img src={j.ikon} alt="ikon" className="w-4 h-4 object-contain" />
@@ -286,7 +403,6 @@ export const DataPage = () => {
 
             {/* Tabel */}
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-                {/* Header Dinamis: Normal vs Mode Bulk Delete */}
                 <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
                     {selectedIds.length > 0 ? (
                         <div className="flex items-center gap-3 w-full">
@@ -334,7 +450,6 @@ export const DataPage = () => {
                         {paginatedData.map((obj) => (
                             <div key={obj.id}>
                                 <div className="flex items-center gap-3 px-5 py-3 hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => setExpandedId(expandedId === obj.id ? null : obj.id)}>
-                                    {/* Checkbox Individual */}
                                     <input 
                                         type="checkbox" 
                                         checked={selectedIds.includes(obj.id)}
@@ -359,7 +474,13 @@ export const DataPage = () => {
                                         ) : "📍"}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-slate-800 truncate">{obj.nama_objek || "Tanpa Nama"}</p>
+                                        <p className="text-sm font-medium text-slate-800 truncate">
+                                            {obj.nama_objek || "Tanpa Nama"}
+                                            {/* Indikator Gambar di Tabel */}
+                                            {(obj.atribut?.Foto || obj.atribut?.foto || obj.atribut?.foto_url) && (
+                                                <ImageIcon size={12} className="inline-block ml-2 text-emerald-500" />
+                                            )}
+                                        </p>
                                         <p className="text-xs text-slate-400 truncate">
                                             {obj.jenis_objek?.nama} · {obj.atribut?.Provinsi ?? obj.atribut?.provinsi ?? "—"}
                                         </p>
@@ -398,7 +519,13 @@ export const DataPage = () => {
                                                     .map(([k, v]) => (
                                                         <div key={k}>
                                                             <p className="text-xs text-slate-400">{k.replace(/_/g, " ")}</p>
-                                                            <p className="text-xs font-medium text-slate-700">{String(v)}</p>
+                                                            {k.toLowerCase().includes("foto") && String(v).startsWith("http") ? (
+                                                                <a href={String(v)} target="_blank" rel="noopener noreferrer" className="text-xs font-medium text-blue-600 hover:underline flex items-center gap-1 mt-0.5">
+                                                                    <ImageIcon size={12} /> Lihat Foto
+                                                                </a>
+                                                            ) : (
+                                                                <p className="text-xs font-medium text-slate-700">{String(v)}</p>
+                                                            )}
                                                         </div>
                                                     ))}
                                         </div>

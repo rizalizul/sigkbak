@@ -92,8 +92,29 @@ export const UploadPage = () => {
         setParsing(true);
         setError(null);
         try {
-            const isExcel = files.some((f) => /\.(xlsx|xls|csv)$/i.test(f.name));
-            let parsed = isExcel ? parseExcel(await files.find((f) => /\.(xlsx|xls|csv)$/i.test(f.name)).arrayBuffer()) : await parseShapefiles(files);
+            // Pisahkan file berdasarkan ekstensinya
+            const excelFiles = files.filter((f) => /\.(xlsx|xls|csv)$/i.test(f.name));
+            const zipFiles = files.filter((f) => /\.zip$/i.test(f.name));
+            
+            let parsed = [];
+
+            // 1. Eksekusi semua file Excel/CSV sekaligus
+            if (excelFiles.length > 0) {
+                const excelResults = await Promise.all(
+                    excelFiles.map(async (file) => {
+                        const buffer = await file.arrayBuffer();
+                        return parseExcel(buffer);
+                    })
+                );
+                // Gabungkan (flatten) array dari beberapa file excel menjadi satu array lurus
+                parsed = [...parsed, ...excelResults.flat()];
+            }
+
+            // 2. Eksekusi file Shapefile (.zip) jika ada
+            if (zipFiles.length > 0) {
+                const shpResults = await parseShapefiles(zipFiles);
+                parsed = [...parsed, ...shpResults];
+            }
             
             if (!parsed.length) throw new Error("Tidak ada data yang berhasil dibaca.");
             setParsedItems(parsed);

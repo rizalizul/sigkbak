@@ -405,7 +405,7 @@ export const DataPage = () => {
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
                 <div className="px-5 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50">
                     {selectedIds.length > 0 ? (
-                        <div className="flex items-center gap-3 w-full">
+                        <div className="flex items-center gap-3 w-full flex-wrap">
                             <input 
                                 type="checkbox" 
                                 checked={isAllCurrentPageSelected}
@@ -413,6 +413,16 @@ export const DataPage = () => {
                                 className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
                             />
                             <span className="text-sm font-semibold text-slate-700">{selectedIds.length} objek dipilih</span>
+                            
+                            {selectedIds.length < filtered.length && filtered.length > ITEMS_PER_PAGE && (
+                                <button
+                                    onClick={() => setSelectedIds(filtered.map(o => o.id))}
+                                    className="text-xs font-semibold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors"
+                                >
+                                    Pilih semua {filtered.length.toLocaleString()} data
+                                </button>
+                            )}
+
                             <div className="flex-1"></div>
                             <button 
                                 onClick={handleBulkDelete}

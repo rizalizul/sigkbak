@@ -193,7 +193,7 @@ const ReviewItem = ({ item, onSave, onDiscard, onUpdate, duplicates }) => {
         setEditing(false);
     };
     
-    // 🌟 Deteksi status untuk UI
+    // Deteksi status untuk UI
     const hasError = !!item.error; 
     const hasDuplicate = duplicates && duplicates.length > 0;
 
@@ -250,7 +250,7 @@ const ReviewItem = ({ item, onSave, onDiscard, onUpdate, duplicates }) => {
                 </button>
             </div>
 
-            {/* 🌟 Peringatan Eror Konversi UTM */}
+            {/* Peringatan Eror Konversi UTM */}
             {hasError && !editing && (
                 <div className="px-3 py-2 bg-rose-50 border-t border-rose-200">
                     <div className="flex items-start gap-2">
@@ -307,13 +307,21 @@ const ReviewItem = ({ item, onSave, onDiscard, onUpdate, duplicates }) => {
 };
 
 export const ReviewPanel = ({ items, onSave, onDiscard, onSaveAll, onDiscardAll, onClearSaved, onUpdate, savingAll, duplicateMap = {} }) => {
+    const [filterMode, setFilterMode] = useState("all"); // "all" | "error" | "duplicate"
+
     const pending = items.filter((i) => i._status === "pending").length;
     const saved = items.filter((i) => i._status === "saved").length;
     const error = items.filter((i) => i._status === "error").length;
     const dupCount = Object.keys(duplicateMap).length;
     
-    // 🌟 Hitung total objek yang gagal di-parsing/konversi
+    // Hitung total objek yang gagal di-parsing/konversi
     const parseErrorCount = items.filter((i) => !!i.error && i._status === "pending").length;
+
+    const displayedItems = items.filter(item => {
+        if (filterMode === "error") return !!item.error && item._status === "pending";
+        if (filterMode === "duplicate") return duplicateMap[item._id] && item._status === "pending";
+        return true; // "all"
+    });
 
     return (
         <div className="space-y-4">
@@ -337,7 +345,7 @@ export const ReviewPanel = ({ items, onSave, onDiscard, onSaveAll, onDiscardAll,
                 </div>
             </div>
 
-            {/* 🌟 Global Warning untuk Parse Error UTM */}
+            {/* Global Warning untuk Parse Error UTM */}
             {parseErrorCount > 0 && (
                 <div className="bg-rose-50 border border-rose-200 rounded-xl px-4 py-3 flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-rose-100 flex items-center justify-center flex-shrink-0">
@@ -385,11 +393,40 @@ export const ReviewPanel = ({ items, onSave, onDiscard, onSaveAll, onDiscardAll,
                 </button>
             </div>
 
+            <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 gap-1 mt-4 mb-2">
+                <button
+                    onClick={() => setFilterMode("all")}
+                    className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all ${filterMode === "all" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                >
+                    Semua Data ({items.length})
+                </button>
+                <button
+                    onClick={() => setFilterMode("error")}
+                    className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 ${filterMode === "error" ? "bg-white text-rose-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                >
+                    <AlertTriangle size={12} className={filterMode === "error" ? "text-rose-500" : ""} />
+                    Gagal ({parseErrorCount})
+                </button>
+                <button
+                    onClick={() => setFilterMode("duplicate")}
+                    className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 ${filterMode === "duplicate" ? "bg-white text-amber-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                >
+                    <AlertTriangle size={12} className={filterMode === "duplicate" ? "text-amber-500" : ""} />
+                    Duplikat ({items.filter(i => duplicateMap[i._id] && i._status === "pending").length})
+                </button>
+            </div>
+
             {/* List */}
-            <div className="max-h-[520px] overflow-y-auto sidebar-scroll space-y-0">
-                {items.map((item) => (
-                    <ReviewItem key={item._id} item={item} onSave={onSave} onDiscard={onDiscard} onUpdate={onUpdate} duplicates={duplicateMap[item._id]} />
-                ))}
+            <div className="max-h-[520px] overflow-y-auto sidebar-scroll space-y-0 pt-1">
+                {displayedItems.length === 0 ? (
+                    <div className="text-center py-8 text-slate-400 text-xs">
+                        {filterMode === "error" ? "✨ Tidak ada data bermasalah!" : filterMode === "duplicate" ? "✨ Tidak ada duplikat ditemukan!" : "Data kosong."}
+                    </div>
+                ) : (
+                    displayedItems.map((item) => (
+                        <ReviewItem key={item._id} item={item} onSave={onSave} onDiscard={onDiscard} onUpdate={onUpdate} duplicates={duplicateMap[item._id]} />
+                    ))
+                )}
             </div>
         </div>
     );

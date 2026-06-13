@@ -123,12 +123,16 @@ const SidebarContent = ({
             {/* Header */}
             <div className="px-5 pt-5 pb-4 border-b border-slate-100 flex-shrink-0">
                 <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 ${ACCENT.bg} rounded-xl flex items-center justify-center shadow-sm`}>
-                        <Map size={16} className="text-white" />
+                    <div className="w-9 h-11 flex items-center justify-center flex-shrink-0">
+                        <img 
+                            src="/logo.png" 
+                            alt="Logo KBAK" 
+                            className="w-full h-full object-contain" 
+                        />
                     </div>
                     <div>
-                        <h1 className="text-sm font-bold text-slate-900 leading-none">SIG KBAK Indonesia</h1>
-                        <p className="text-xs text-slate-400 mt-0.5">Sistem Informasi Geografis</p>
+                        <h1 className="text-sm font-bold text-slate-1000 leading-none">Geoportal KBAK Indonesia</h1>
+                        <p className="text-xs text-slate-400 mt-0.5">Pusat Air Tanah dan Geologi Tata Lingkungan</p>
                     </div>
                 </div>
             </div>
@@ -260,11 +264,12 @@ export const PublicSidebar = ({
                     {/* Preview saat collapsed */}
                     {sheetState === "collapsed" && (
                         <div className="w-full flex items-center gap-3">
-                            <div className={`w-6 h-6 ${ACCENT.bg} rounded-lg flex items-center justify-center flex-shrink-0`}>
-                                <Map size={12} className="text-white" />
+                            {/* Logo Mobile View */}
+                            <div className="w-6 h-8 flex items-center justify-center flex-shrink-0">
+                                <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-semibold text-slate-800 leading-none">SIG KBAK Indonesia</p>
+                                <p className="text-sm font-semibold text-slate-800 leading-none">Geoportal KBAK Indonesia</p>
                                 <p className="text-xs text-slate-400 mt-0.5">
                                     <span className={`font-bold ${ACCENT.text}`}>{filteredObjek.toLocaleString()}</span>
                                     {" "}dari {totalObjek.toLocaleString()} objek
@@ -285,10 +290,11 @@ export const PublicSidebar = ({
                     {sheetState !== "collapsed" && (
                         <div className="w-full flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                                <div className={`w-6 h-6 ${ACCENT.bg} rounded-lg flex items-center justify-center`}>
-                                    <Map size={12} className="text-white" />
+                                {/* Logo Mobile Expand View */}
+                                <div className="w-5 h-6 flex items-center justify-center flex-shrink-0">
+                                    <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
                                 </div>
-                                <span className="text-sm font-bold text-slate-800">SIG KBAK Indonesia</span>
+                                <span className="text-sm font-bold text-slate-800">Geoportal KBAK Indonesia</span>
                                 {activeFilterCount > 0 && (
                                     <span className={`text-xs font-bold text-white ${ACCENT.bg} w-5 h-5 rounded-full flex items-center justify-center`}>
                                         {activeFilterCount}

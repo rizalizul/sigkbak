@@ -50,10 +50,11 @@ export const AdminLayout = () => {
     };
 
     if (loading) return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-            <div className="w-10 h-10 bg-slate-900 rounded-xl animate-pulse flex items-center justify-center">
-                <Map size={18} className="text-white" />
+        <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-4">
+            <div className="w-12 h-16 animate-pulse flex items-center justify-center">
+                <img src="/logo.png" alt="Memuat..." className="w-full h-full object-contain" />
             </div>
+            <p className="text-sm font-medium text-slate-400 animate-pulse">Memuat Panel Admin...</p>
         </div>
     );
 
@@ -70,12 +71,17 @@ export const AdminLayout = () => {
             <aside className={`flex flex-col bg-slate-900 text-white transition-all duration-300 flex-shrink-0 z-20 ${collapsed ? "w-16" : "w-56"}`}>
                 {/* Logo */}
                 <div className="flex items-center gap-3 px-4 py-5 border-b border-slate-700">
-                    <div className="w-8 h-8 bg-white rounded-xl flex items-center justify-center flex-shrink-0">
-                        <Map size={16} className="text-slate-900" />
+                    <div className="w-8 h-10 flex items-center justify-center flex-shrink-0">
+                        <img src="/logo.png" alt="Logo KBAK" className="w-full h-full object-contain" />
                     </div>
                     {!collapsed && (
                         <div className="min-w-0">
-                            <p className="text-sm font-bold leading-none truncate">SIG KBAK</p>
+                            <p 
+                                className="text-sm font-bold leading-none truncate" 
+                                title="Geoportal KBAK Indonesia"
+                            >
+                                Geoportal KBAK Indonesia
+                            </p>
                             <p className="text-xs text-slate-400 mt-0.5">Admin Panel</p>
                         </div>
                     )}

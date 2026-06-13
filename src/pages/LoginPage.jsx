@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { supabase } from "../lib/supabase";
 import { useNavigate, Link } from "react-router-dom";
-import { Map, Loader2, Eye, EyeOff } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 
 export const LoginPage = () => {
     const navigate = useNavigate();
@@ -44,7 +44,6 @@ export const LoginPage = () => {
             setError(err.message);
         } else {
             setMsg("Tautan pemulihan telah dikirim! Silakan periksa kotak masuk atau folder spam email Anda.");
-            // Sengaja tidak mengembalikan ke mode login otomatis agar user sempat membaca pesannya
         }
         setLoading(false);
     };
@@ -53,10 +52,10 @@ export const LoginPage = () => {
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
             <div className="w-full max-w-md">
                 <div className="text-center mb-8">
-                    <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl">
-                        <Map size={28} className="text-slate-900" />
+                    <div className="w-14 h-20 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl p-2">
+                        <img src="/logo.png" alt="Logo KBAK" className="w-full h-full object-contain" />
                     </div>
-                    <h1 className="text-2xl font-bold text-white">SIG KBAK Indonesia</h1>
+                    <h1 className="text-2xl font-bold text-white">Geoportal KBAK Indonesia</h1>
                     <p className="text-slate-400 mt-1 text-sm">
                         {isResetMode ? "Pemulihan kata sandi" : "Masuk ke panel editor"}
                     </p>
@@ -127,7 +126,6 @@ export const LoginPage = () => {
                                 <div className="flex items-center justify-between mb-1.5">
                                     <label className="block text-sm font-medium text-slate-700">Password</label>
                                     
-                                    {/* TOMBOL LUPA PASSWORD */}
                                     <button 
                                         type="button" 
                                         onClick={() => {
@@ -165,7 +163,6 @@ export const LoginPage = () => {
 
                     )}
 
-                    {/* Teks bantuan di bawah form hanya muncul jika bukan mode Lupa Password */}
                     {!isResetMode && (
                         <>
                             <p className="text-center text-sm text-slate-500 mt-6">

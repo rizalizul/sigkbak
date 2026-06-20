@@ -92,20 +92,64 @@ export const usePreview = () => {
             if (!item) return;
             const { _id, _status, _jenisId, error: itemError, ...data } = item;
             const { error } = await supabase.from("objek_spasial").insert({ ...data, jenis_id: _jenisId });
-            setItems((prev) => prev.map((i) => (i._id === id ? { ...i, _status: error ? "error" : "saved" } : i)));
+            setItems((prev) => prev.map((i) => (i._id === id ? { ...i, _status: error ? "error" : "saved", error: error ? error.message : null } : i)));
         },
         [items],
     );
 
+    // Simpan Massal Instan (Bulk Insert)
     const saveAll = useCallback(async () => {
         setSavingAll(true);
-        const pending = items.filter((i) => i._status === "pending");
-        for (const item of pending) {
-            setItems((prev) => prev.map((i) => (i._id === item._id ? { ...i, _status: "saving" } : i)));
-            const { _id, _status, _jenisId, error: itemError, ...data } = item;
-            const { error } = await supabase.from("objek_spasial").insert({ ...data, jenis_id: _jenisId });
-            setItems((prev) => prev.map((i) => (i._id === item._id ? { ...i, _status: error ? "error" : "saved" } : i)));
+        
+        // 1. Saring data yang statusnya pending DAN tidak punya error bawaan (error koordinat)
+        const pending = items.filter((i) => i._status === "pending" && !i.error);
+        
+        if (pending.length === 0) {
+            setSavingAll(false);
+            return;
         }
+
+        // 2. Ubah status UI menjadi "menyimpan..." secara serentak
+        const pendingIds = new Set(pending.map(i => i._id));
+        setItems((prev) => prev.map((i) => (pendingIds.has(i._id) ? { ...i, _status: "saving" } : i)));
+
+        const chunkSize = 500;
+        const resultStatusMap = {};
+
+        // 3. Proses pengiriman data menggunakan teknik Chunking (500 data per 1 request)
+        for (let i = 0; i < pending.length; i += chunkSize) {
+            const chunk = pending.slice(i, i + chunkSize);
+            
+            // Format ulang payload sesuai bentuk tabel database
+            const payloads = chunk.map((item) => {
+                const { _id, _status, _jenisId, error: itemError, ...data } = item;
+                return { ...data, jenis_id: _jenisId };
+            });
+
+            // Tembakkan Bulk Insert ke Supabase
+            const { error } = await supabase.from("objek_spasial").insert(payloads);
+
+            // Simpan status keberhasilan atau kegagalan untuk kelompok (chunk) ini
+            chunk.forEach(item => {
+                resultStatusMap[item._id] = {
+                    status: error ? "error" : "saved",
+                    errorMsg: error ? error.message : null
+                };
+            });
+        }
+
+        // 4. Update UI hasil akhir (Tersimpan atau Error) secara serentak
+        setItems((prev) => prev.map((i) => {
+            if (resultStatusMap[i._id]) {
+                return {
+                    ...i,
+                    _status: resultStatusMap[i._id].status,
+                    error: resultStatusMap[i._id].errorMsg || i.error
+                };
+            }
+            return i;
+        }));
+
         setSavingAll(false);
     }, [items]);
 

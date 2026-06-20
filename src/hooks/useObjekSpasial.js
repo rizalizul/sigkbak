@@ -31,11 +31,10 @@ export const useObjekSpasial = (activeJenisIds = []) => {
         return data.filter((d) => d.nama_objek?.toLowerCase().includes(q) || JSON.stringify(d.atribut)?.toLowerCase().includes(q));
     }, [data, searchQuery]);
 
-    // Create Optimistic
     const createObjek = async (payload) => {
         const { data: newData, error } = await supabase.from("objek_spasial").insert(payload).select("*, jenis_objek(id, nama, warna, ikon)").single();
         if (!error && newData) {
-            setData((prev) => [newData, ...prev]); // Langsung taruh di paling atas
+            setData((prev) => [newData, ...prev]); 
         }
         return { error };
     };
@@ -43,7 +42,7 @@ export const useObjekSpasial = (activeJenisIds = []) => {
     const updateObjek = async (id, payload) => {
         const { data: updatedData, error } = await supabase.from("objek_spasial").update(payload).eq("id", id).select("*, jenis_objek(id, nama, warna, ikon)").single();
         if (!error && updatedData) {
-            setData((prev) => prev.map((item) => (item.id === id ? updatedData : item))); // Langsung update barisnya
+            setData((prev) => prev.map((item) => (item.id === id ? updatedData : item))); 
         }
         return { error };
     };
@@ -51,10 +50,39 @@ export const useObjekSpasial = (activeJenisIds = []) => {
     const deleteObjek = async (id) => {
         const { error } = await supabase.from("objek_spasial").delete().eq("id", id);
         if (!error) {
-            setData((prev) => prev.filter((item) => item.id !== id)); // Langsung hilangkan dari layar
+            setData((prev) => prev.filter((item) => item.id !== id)); 
         }
         return { error };
     };
 
-    return { data, filtered, loading, searchQuery, setSearchQuery, createObjek, deleteObjek, updateObjek };
+    const bulkDeleteObjek = async (ids) => {
+        let hasError = null;
+        
+        // Kita pecah menjadi kelompok 500 ID per request agar URL API Supabase tidak kepanjangan/error
+        const chunkSize = 500; 
+        const deletePromises = [];
+
+        for (let i = 0; i < ids.length; i += chunkSize) {
+            const chunk = ids.slice(i, i + chunkSize);
+            // Masukkan antrean perintah hapus 500 data ke dalam array Promise (eksekusi paralel)
+            deletePromises.push(supabase.from("objek_spasial").delete().in("id", chunk));
+        }
+
+        // Eksekusi semua tembakan API secara bersamaan
+        const results = await Promise.all(deletePromises);
+        
+        results.forEach(res => {
+            if (res.error) hasError = res.error;
+        });
+
+        if (!hasError) {
+            // Bersihkan data dari layar secara instan tanpa perlu reload dari server
+            const idSet = new Set(ids);
+            setData((prev) => prev.filter((item) => !idSet.has(item.id)));
+        }
+        
+        return { error: hasError };
+    };
+
+    return { data, filtered, loading, searchQuery, setSearchQuery, createObjek, deleteObjek, updateObjek, bulkDeleteObjek };
 };

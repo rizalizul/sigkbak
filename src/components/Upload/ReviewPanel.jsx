@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import L from "leaflet";
-import { ChevronDown, ChevronUp, Save, Trash2, Loader2, CheckCheck, Pencil, X, Check, AlertTriangle, MapPin } from "lucide-react";
+import { ChevronDown, ChevronUp, Save, Trash2, Loader2, CheckCheck, Pencil, X, Check, AlertTriangle, MapPin, RefreshCcw } from "lucide-react";
 
 const StatusBadge = ({ status }) => {
     const map = { pending: "bg-amber-100 text-amber-700", saving: "bg-blue-100 text-blue-700", saved: "bg-green-100 text-green-700", error: "bg-rose-100 text-rose-700" };
-    const label = { pending: "Menunggu", saving: "Menyimpan...", saved: "Tersimpan", error: "Error" };
+    const label = { pending: "Menunggu", saving: "Menyimpan...", saved: "Tersimpan", error: "Error Server" };
     return <span className={`text-xs font-medium px-2 py-0.5 rounded-lg flex-shrink-0 ${map[status]}`}>{label[status]}</span>;
 };
 
@@ -107,7 +107,7 @@ const InlineEditForm = ({ item, onSave, onCancel }) => {
 
     return (
         <div className="px-3 pb-3 pt-2 bg-blue-50 border-t border-blue-100 space-y-3">
-            <p className="text-xs font-semibold text-blue-800">✏️ Edit sebelum simpan</p>
+            <p className="text-xs font-semibold text-blue-800">✏️ Edit Data</p>
 
             <div>
                 <label className="block text-xs text-slate-500 mb-1">Nama Objek</label>
@@ -175,7 +175,7 @@ const InlineEditForm = ({ item, onSave, onCancel }) => {
                     Batal
                 </button>
                 <button onClick={handleSave} className="flex-1 py-1.5 bg-blue-700 text-white rounded-lg text-xs font-medium hover:bg-blue-800 transition-colors flex items-center justify-center gap-1">
-                    <Check size={12} /> Terapkan
+                    <Check size={12} /> Terapkan & Simpan
                 </button>
             </div>
         </div>
@@ -190,18 +190,22 @@ const ReviewItem = ({ item, onSave, onDiscard, onUpdate, duplicates }) => {
 
     const handleUpdate = (updated) => {
         onUpdate(item._id, updated);
+        if (item._status === "error") {
+             onSave(item._id);
+        }
         setEditing(false);
     };
     
-    // Deteksi status untuk UI
-    const hasError = !!item.error; 
+    const hasParseError = !!item.error && item._status === "pending";
+    const hasServerError = item._status === "error";
+    const isErrorState = hasParseError || hasServerError;
     const hasDuplicate = duplicates && duplicates.length > 0;
 
     return (
-        <div className={`border rounded-xl overflow-hidden mb-2 transition-opacity ${item._status === "saved" ? "opacity-40" : ""} ${hasError ? "border-rose-300 shadow-sm shadow-rose-100" : hasDuplicate && item._status === "pending" ? "border-amber-300" : "border-slate-200"}`}>
+        <div className={`border rounded-xl overflow-hidden mb-2 transition-opacity ${item._status === "saved" ? "opacity-40" : ""} ${isErrorState ? "border-rose-300 shadow-sm shadow-rose-100" : hasDuplicate && item._status === "pending" ? "border-amber-300" : "border-slate-200"}`}>
             
             {/* Header */}
-            <div className={`flex items-center gap-2 px-3 py-2.5 ${hasError ? "bg-rose-50/50" : hasDuplicate && item._status === "pending" ? "bg-amber-50" : "bg-slate-50"}`}>
+            <div className={`flex items-center gap-2 px-3 py-2.5 ${isErrorState ? "bg-rose-50/50" : hasDuplicate && item._status === "pending" ? "bg-amber-50" : "bg-slate-50"}`}>
                 <div
                     className="flex-1 min-w-0 cursor-pointer"
                     onClick={() => {
@@ -210,31 +214,31 @@ const ReviewItem = ({ item, onSave, onDiscard, onUpdate, duplicates }) => {
                     }}
                 >
                     <div className="flex items-center gap-1.5">
-                        <p className={`text-sm font-medium truncate ${hasError ? "text-rose-900" : "text-slate-800"}`}>
+                        <p className={`text-sm font-medium truncate ${isErrorState ? "text-rose-900" : "text-slate-800"}`}>
                             {item.nama_objek || "Tanpa Nama"}
                         </p>
                         
-                        {/* Tampilkan Ikon sesuai masalah */}
-                        {hasError ? (
+                        {isErrorState ? (
                             <AlertTriangle size={13} className="text-rose-500 flex-shrink-0" />
                         ) : hasDuplicate && item._status === "pending" ? (
                             <AlertTriangle size={13} className="text-amber-500 flex-shrink-0" />
                         ) : null}
                     </div>
-                    <p className={`text-xs ${hasError ? "text-rose-400" : "text-slate-400"}`}>
+                    <p className={`text-xs ${isErrorState ? "text-rose-400" : "text-slate-400"}`}>
                         {item.koordinat_x && item.koordinat_y ? `${parseFloat(item.koordinat_y).toFixed(5)}, ${parseFloat(item.koordinat_x).toFixed(5)}` : "Koordinat tidak tersedia"}
                     </p>
                 </div>
                 
                 <StatusBadge status={item._status} />
                 
-                {item._status === "pending" && (
+                {/* Tombol Edit muncul di status pending ATAU jika terjadi error server */}
+                {(item._status === "pending" || hasServerError) && (
                     <button
                         onClick={() => {
                             setEditing((p) => !p);
                             setExpanded(false);
                         }}
-                        className={`w-6 h-6 flex items-center justify-center rounded-lg transition-colors ml-1 ${hasError ? "text-rose-500 hover:bg-rose-100" : "text-slate-400 hover:bg-blue-100 hover:text-blue-600"}`}
+                        className={`w-6 h-6 flex items-center justify-center rounded-lg transition-colors ml-1 ${isErrorState ? "text-rose-500 hover:bg-rose-100" : "text-slate-400 hover:bg-blue-100 hover:text-blue-600"}`}
                     >
                         <Pencil size={12} />
                     </button>
@@ -244,14 +248,14 @@ const ReviewItem = ({ item, onSave, onDiscard, onUpdate, duplicates }) => {
                         setExpanded((p) => !p);
                         setEditing(false);
                     }}
-                    className={`ml-1 ${hasError ? "text-rose-400" : "text-slate-400"}`}
+                    className={`ml-1 ${isErrorState ? "text-rose-400" : "text-slate-400"}`}
                 >
                     {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                 </button>
             </div>
 
-            {/* Peringatan Eror Konversi UTM */}
-            {hasError && !editing && (
+            {/* Peringatan Eror Koordinat (Parse) */}
+            {hasParseError && !editing && (
                 <div className="px-3 py-2 bg-rose-50 border-t border-rose-200">
                     <div className="flex items-start gap-2">
                         <AlertTriangle size={13} className="text-rose-600 flex-shrink-0 mt-0.5" />
@@ -264,8 +268,22 @@ const ReviewItem = ({ item, onSave, onDiscard, onUpdate, duplicates }) => {
                 </div>
             )}
 
+            {/* Peringatan Eror Server Database */}
+            {hasServerError && !editing && (
+                <div className="px-3 py-2 bg-rose-50 border-t border-rose-200">
+                    <div className="flex items-start gap-2">
+                        <AlertTriangle size={13} className="text-rose-600 flex-shrink-0 mt-0.5" />
+                        <div>
+                            <p className="text-xs font-semibold text-rose-800">Gagal Disimpan ke Database!</p>
+                            <p className="text-xs text-rose-600 mt-0.5 font-mono">{item.error || "Terjadi kesalahan yang tidak diketahui dari server."}</p>
+                            <p className="text-[10px] text-rose-500 mt-1">Silakan klik ikon pensil untuk memperbaiki datanya lalu coba simpan ulang.</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Peringatan Duplikat */}
-            {hasDuplicate && item._status === "pending" && !hasError && !editing && <DuplicateWarning matches={duplicates} />}
+            {hasDuplicate && item._status === "pending" && !isErrorState && !editing && <DuplicateWarning matches={duplicates} />}
 
             {/* Expanded detail */}
             {expanded && !editing && atributEntries.length > 0 && (
@@ -283,10 +301,11 @@ const ReviewItem = ({ item, onSave, onDiscard, onUpdate, duplicates }) => {
             {editing && <InlineEditForm item={item} onSave={handleUpdate} onCancel={() => setEditing(false)} />}
 
             {/* Actions */}
-            {item._status === "pending" && !editing && (
+            {(item._status === "pending" || hasServerError) && !editing && (
                 <div className="flex gap-1.5 px-3 py-2 border-t border-slate-100 bg-white">
-                    <button onClick={() => onSave(item._id)} className={`flex-1 flex items-center justify-center gap-1 py-1.5 text-white rounded-lg text-xs font-medium transition-colors ${hasError ? "bg-slate-300 cursor-not-allowed" : "bg-slate-800 hover:bg-slate-700"}`} disabled={hasError}>
-                        <Save size={11} /> Simpan
+                    <button onClick={() => onSave(item._id)} className={`flex-1 flex items-center justify-center gap-1 py-1.5 text-white rounded-lg text-xs font-medium transition-colors ${hasParseError ? "bg-slate-300 cursor-not-allowed" : "bg-slate-800 hover:bg-slate-700"}`} disabled={hasParseError}>
+                        {hasServerError ? <RefreshCcw size={11} /> : <Save size={11} />} 
+                        {hasServerError ? "Coba Simpan Ulang" : "Simpan"}
                     </button>
                     <button
                         onClick={() => onDiscard(item._id)}
@@ -299,7 +318,7 @@ const ReviewItem = ({ item, onSave, onDiscard, onUpdate, duplicates }) => {
             
             {item._status === "saving" && (
                 <div className="flex items-center justify-center gap-2 px-3 py-2 border-t border-slate-100 text-xs text-blue-600">
-                    <Loader2 size={11} className="animate-spin" /> Menyimpan...
+                    <Loader2 size={11} className="animate-spin" /> Menyimpan ke server...
                 </div>
             )}
         </div>
@@ -311,15 +330,21 @@ export const ReviewPanel = ({ items, onSave, onDiscard, onSaveAll, onDiscardAll,
 
     const pending = items.filter((i) => i._status === "pending").length;
     const saved = items.filter((i) => i._status === "saved").length;
-    const error = items.filter((i) => i._status === "error").length;
-    const dupCount = Object.keys(duplicateMap).length;
     
-    // Hitung total objek yang gagal di-parsing/konversi
     const parseErrorCount = items.filter((i) => !!i.error && i._status === "pending").length;
+    const serverErrorCount = items.filter((i) => i._status === "error").length;
+    const totalErrorCount = parseErrorCount + serverErrorCount;
+    
+    const dupCount = Object.keys(duplicateMap).length;
 
     const displayedItems = items.filter(item => {
-        if (filterMode === "error") return !!item.error && item._status === "pending";
-        if (filterMode === "duplicate") return duplicateMap[item._id] && item._status === "pending";
+        if (filterMode === "error") {
+            // Tampilkan jika error koordinat ATAU error database
+            return (!!item.error && item._status === "pending") || item._status === "error";
+        }
+        if (filterMode === "duplicate") {
+            return duplicateMap[item._id] && item._status === "pending";
+        }
         return true; // "all"
     });
 
@@ -336,7 +361,7 @@ export const ReviewPanel = ({ items, onSave, onDiscard, onSaveAll, onDiscardAll,
                     <p className="text-xs text-green-600">Tersimpan</p>
                 </div>
                 <div className="bg-rose-50 rounded-xl p-3 text-center">
-                    <p className="text-lg font-bold text-rose-700">{error}</p>
+                    <p className="text-lg font-bold text-rose-700">{serverErrorCount}</p>
                     <p className="text-xs text-rose-600">Gagal Server</p>
                 </div>
                 <div className="bg-orange-50 rounded-xl p-3 text-center">
@@ -352,9 +377,9 @@ export const ReviewPanel = ({ items, onSave, onDiscard, onSaveAll, onDiscardAll,
                         <AlertTriangle size={16} className="text-rose-600" />
                     </div>
                     <div>
-                        <p className="text-sm font-semibold text-rose-800">Aksi Diperlukan</p>
+                        <p className="text-sm font-semibold text-rose-800">Koordinat Bermasalah</p>
                         <p className="text-xs text-rose-700 mt-0.5">
-                            Terdapat <b>{parseErrorCount} data</b> yang koordinatnya gagal terbaca. Silakan perbaiki manual (klik ikon pensil) sebelum menyimpan ke database.
+                            Terdapat <b>{parseErrorCount} data</b> yang koordinatnya gagal terbaca. Perbaiki manual agar bisa disimpan.
                         </p>
                     </div>
                 </div>
@@ -365,7 +390,7 @@ export const ReviewPanel = ({ items, onSave, onDiscard, onSaveAll, onDiscardAll,
                 <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center gap-2">
                     <AlertTriangle size={15} className="text-amber-600 flex-shrink-0" />
                     <p className="text-xs text-amber-700">
-                        <span className="font-semibold">{dupCount} objek</span> terdeteksi mirip dengan data yang sudah ada di database. Periksa sebelum menyimpan.
+                        <span className="font-semibold">{dupCount} objek</span> terdeteksi mirip dengan data yang sudah ada di database.
                     </p>
                 </div>
             )}
@@ -393,6 +418,7 @@ export const ReviewPanel = ({ items, onSave, onDiscard, onSaveAll, onDiscardAll,
                 </button>
             </div>
 
+            {/* Quick Filters (Tab Toggle) */}
             <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 gap-1 mt-4 mb-2">
                 <button
                     onClick={() => setFilterMode("all")}
@@ -405,7 +431,7 @@ export const ReviewPanel = ({ items, onSave, onDiscard, onSaveAll, onDiscardAll,
                     className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 ${filterMode === "error" ? "bg-white text-rose-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
                 >
                     <AlertTriangle size={12} className={filterMode === "error" ? "text-rose-500" : ""} />
-                    Gagal ({parseErrorCount})
+                    Gagal ({totalErrorCount})
                 </button>
                 <button
                     onClick={() => setFilterMode("duplicate")}

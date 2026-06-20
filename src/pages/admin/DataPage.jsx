@@ -231,7 +231,7 @@ export const DataPage = () => {
     const [selectedJenis, setSelectedJenis] = useState([]);
     const jenisIds = selectedJenis.length > 0 ? selectedJenis : jenisList.map((j) => j.id);
 
-    const { filtered, loading, searchQuery, setSearchQuery, createObjek, deleteObjek, updateObjek } = useObjekSpasial(jenisIds);
+    const { filtered, loading, searchQuery, setSearchQuery, createObjek, deleteObjek, updateObjek, bulkDeleteObjek } = useObjekSpasial(jenisIds);
     
     // --- STATE PAGINATION & BULK DELETE ---
     const [currentPage, setCurrentPage] = useState(1);
@@ -288,12 +288,18 @@ export const DataPage = () => {
     // Hapus Massal (Bulk Delete)
     const handleBulkDelete = async () => {
         if (!confirm(`YAKIN INGIN MENGHAPUS ${selectedIds.length} OBJEK SEKALIGUS?\nTindakan ini tidak dapat dibatalkan.`)) return;
+        
         setIsDeletingBulk(true);
-        // Loop penghapusan satu per satu
-        for (const id of selectedIds) {
-            await deleteObjek(id);
+        
+        // Panggil fungsi bulkDelete baru yang mengeksekusi secara instan
+        const { error: err } = await bulkDeleteObjek(selectedIds);
+        
+        if (err) {
+            alert(`Gagal menghapus sebagian atau seluruh data: ${err.message}`);
+        } else {
+            setSelectedIds([]);
         }
-        setSelectedIds([]);
+        
         setIsDeletingBulk(false);
     };
 

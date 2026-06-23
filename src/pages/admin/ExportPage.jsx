@@ -5,21 +5,50 @@ import * as XLSX from "xlsx";
 import { Download, Loader2, FileSpreadsheet, FileJson, FileText, Archive, MapPin } from "lucide-react";
 
 const flattenObjek = (rows) =>
-    rows.map((r) => ({
-        id: r.id,
-        jenis_objek: r.jenis_objek?.nama || "",
-        nama_objek: r.nama_objek || "",
-        koordinat_x: r.koordinat_x,
-        koordinat_y: r.koordinat_y,
-        ...r.atribut,
-        created_at: r.created_at,
-    }));
+    rows.map((r) => {
+        const attr = r.atribut || {};
+        
+        const base = {
+            "Jenis_Objek": r.jenis_objek?.nama || "", 
+            "Kode": attr.Kode || attr.kode || "",
+            "Nama Objek": r.nama_objek || "",
+            "X": r.koordinat_x ?? "",
+            "Y": r.koordinat_y ?? "",
+            "Jenis": attr.Jenis || attr.jenis || "",
+            "Desa": attr.Desa || attr.desa || "",
+            "Kecamatan": attr.Kecamatan || attr.kecamatan || "",
+            "Kab_Kota": attr.Kab_Kota || attr.kab_kota || attr.Kabupaten || attr.kabupaten || attr.Kota || attr.kota || "",
+            "Provinsi": attr.Provinsi || attr.provinsi || "",
+            "Deskripsi_Objek": attr.Deskripsi_Objek || attr.deskripsi_objek || attr.Deskripsi || attr.deskripsi || "",
+            "Sumber": attr.Sumber || attr.sumber || "",
+            "Tahun": attr.Tahun || attr.tahun || "",
+            "Status": attr.Status || attr.status || "",
+            "Foto": attr.Foto || attr.foto || attr.foto_url || "",
+        };
+
+        const mappedKeys = [
+            "Kode", "kode", "Jenis", "jenis", "Desa", "desa", "Kecamatan", "kecamatan", 
+            "Kab_Kota", "kab_kota", "Kabupaten", "kabupaten", "Kota", "kota", 
+            "Provinsi", "provinsi", "Deskripsi_Objek", "deskripsi_objek", 
+            "Deskripsi", "deskripsi", "Sumber", "sumber", "Tahun", "tahun", 
+            "Status", "status", "Foto", "foto", "foto_url"
+        ];
+
+        const extras = {};
+        Object.keys(attr).forEach((k) => {
+            if (!mappedKeys.includes(k)) {
+                extras[k] = attr[k];
+            }
+        });
+
+        return { ...base, ...extras };
+    });
 
 export const ExportPage = () => {
     const { jenisList } = useJenisObjek();
     const [selectedJenis, setSelectedJenis] = useState([]);
     
-    // STATE BARU UNTUK FILTER WILAYAH
+    // STATE UNTUK FILTER WILAYAH
     const [availableProvinsi, setAvailableProvinsi] = useState([]);
     const [availableKabupaten, setAvailableKabupaten] = useState([]);
     const [selectedProvinsi, setSelectedProvinsi] = useState("");
@@ -29,7 +58,6 @@ export const ExportPage = () => {
     const [exporting, setExporting] = useState(null);
     const [error, setError] = useState(null);
 
-    // Mengambil daftar unik Provinsi dan Kabupaten dari database saat halaman dimuat
     useEffect(() => {
         const loadWilayahOptions = async () => {
             setIsLoadingFilters(true);
@@ -48,7 +76,6 @@ export const ExportPage = () => {
                 if (kab) kabSet.add(String(kab).toUpperCase().trim());
             });
 
-            // Urutkan sesuai abjad
             setAvailableProvinsi(Array.from(provSet).sort());
             setAvailableKabupaten(Array.from(kabSet).sort());
             setIsLoadingFilters(false);
@@ -56,18 +83,15 @@ export const ExportPage = () => {
         loadWilayahOptions();
     }, []);
 
-    // Fungsi fetchData di-update untuk menerapkan filter wilayah
     const fetchData = async () => {
         const ids = selectedJenis.length > 0 ? selectedJenis : jenisList.map((j) => j.id);
         if (ids.length === 0) throw new Error("Tidak ada jenis objek yang dipilih.");
         
-        // 1. Ambil data berdasarkan Jenis Objek
         const { data, error: err } = await supabase.from("objek_spasial").select("*, jenis_objek(nama, warna, ikon)").in("jenis_id", ids);
         if (err) throw err;
         
         let filteredData = data || [];
 
-        // 2. Filter berdasarkan Provinsi (jika dipilih)
         if (selectedProvinsi) {
             filteredData = filteredData.filter(d => {
                 const prov = d.atribut?.Provinsi || d.atribut?.provinsi || d.atribut?.PROVINSI || d.atribut?.Prov || d.atribut?.prov;
@@ -75,7 +99,6 @@ export const ExportPage = () => {
             });
         }
 
-        // 3. Filter berdasarkan Kabupaten/Kota (jika dipilih)
         if (selectedKabupaten) {
             filteredData = filteredData.filter(d => {
                 const kab = d.atribut?.Kab_Kota || d.atribut?.Kabupaten || d.atribut?.kabupaten || d.atribut?.KABUPATEN || 
@@ -92,6 +115,38 @@ export const ExportPage = () => {
         return filteredData;
     };
 
+    const getBaseName = () => {
+        let parts = ["SIG_KBAK"];
+        
+        // Penamaan berdasarkan Jenis Objek
+        if (selectedJenis.length === 1) {
+            const jName = jenisList.find(j => j.id === selectedJenis[0])?.nama;
+            if (jName) parts.push(jName);
+        } else if (selectedJenis.length > 1) {
+            parts.push("Multi_Objek");
+        } else {
+            parts.push("Semua_Objek");
+        }
+
+        // Penamaan berdasarkan Wilayah
+        if (selectedProvinsi) parts.push(selectedProvinsi);
+        if (selectedKabupaten) parts.push(selectedKabupaten);
+
+        // Penamaan berdasarkan Waktu (YYYYMMDD_HHMMSS)
+        const date = new Date();
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        const hh = String(date.getHours()).padStart(2, '0');
+        const min = String(date.getMinutes()).padStart(2, '0');
+        const ss = String(date.getSeconds()).padStart(2, '0');
+        
+        parts.push(`${yyyy}${mm}${dd}_${hh}${min}${ss}`);
+
+        // Gabung dengan underscore, bersihkan karakter aneh
+        return parts.join("_").replace(/[^a-zA-Z0-9_]/g, "_").replace(/_+/g, "_");
+    };
+
     const exportExcel = async () => {
         setExporting("xlsx");
         setError(null);
@@ -101,7 +156,7 @@ export const ExportPage = () => {
             const ws = XLSX.utils.json_to_sheet(flat);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "Objek KBAK");
-            XLSX.writeFile(wb, `sigkbak_export_${Date.now()}.xlsx`);
+            XLSX.writeFile(wb, `${getBaseName()}.xlsx`);
         } catch (err) {
             setError(err.message);
         }
@@ -113,20 +168,23 @@ export const ExportPage = () => {
         setError(null);
         try {
             const rows = await fetchData();
+            const flatData = flattenObjek(rows);
+            
             const geojson = {
                 type: "FeatureCollection",
-                features: rows
-                    .filter((r) => r.koordinat_x && r.koordinat_y)
+                features: flatData
+                    .filter((r) => r.X !== "" && r.Y !== "") 
                     .map((r) => ({
                         type: "Feature",
-                        geometry: { type: "Point", coordinates: [r.koordinat_x, r.koordinat_y] },
-                        properties: { id: r.id, nama_objek: r.nama_objek, jenis: r.jenis_objek?.nama, ...r.atribut },
+                        geometry: { type: "Point", coordinates: [Number(r.X), Number(r.Y)] },
+                        properties: r, 
                     })),
             };
+            
             const blob = new Blob([JSON.stringify(geojson, null, 2)], { type: "application/json" });
             const a = document.createElement("a");
             a.href = URL.createObjectURL(blob);
-            a.download = `sigkbak_export_${Date.now()}.geojson`;
+            a.download = `${getBaseName()}.geojson`;
             a.click();
         } catch (err) {
             setError(err.message);
@@ -145,7 +203,7 @@ export const ExportPage = () => {
             const blob = new Blob([csv], { type: "text/csv" });
             const a = document.createElement("a");
             a.href = URL.createObjectURL(blob);
-            a.download = `sigkbak_export_${Date.now()}.csv`;
+            a.download = `${getBaseName()}.csv`;
             a.click();
         } catch (err) {
             setError(err.message);
@@ -158,26 +216,54 @@ export const ExportPage = () => {
         setError(null);
         try {
             const rows = await fetchData();
+            const flatData = flattenObjek(rows);
+
             const geojson = {
                 type: "FeatureCollection",
-                features: rows
-                    .filter((r) => r.koordinat_x && r.koordinat_y)
-                    .map((r) => ({
-                        type: "Feature",
-                        geometry: { type: "Point", coordinates: [r.koordinat_x, r.koordinat_y] },
-                        properties: { 
-                            id: String(r.id),
-                            nama: r.nama_objek || "Tanpa Nama", 
-                            jenis: r.jenis_objek?.nama || "", 
-                            ...r.atribut 
-                        },
-                    })),
+                features: flatData
+                    .filter((r) => r.X !== "" && r.Y !== "")
+                    .map((r) => {
+                        // Cetak objek baru dari awal agar urutan tidak melompat ke belakang
+                        const shpProps = {
+                            "Jns_Objek": r["Jenis_Objek"] || "",
+                            "Kode": r["Kode"] || "",
+                            "Nama Objek": r["Nama Objek"] || "",
+                            "X": r["X"],
+                            "Y": r["Y"],
+                            "Jenis": r["Jenis"] || "",
+                            "Desa": r["Desa"] || "",
+                            "Kecamatan": r["Kecamatan"] || "",
+                            "Kab_Kota": r["Kab_Kota"] || "",
+                            "Provinsi": r["Provinsi"] || "",
+                            "Deskripsi_Objek": r["Deskripsi_Objek"] || "",
+                            "Sumber": r["Sumber"] || "",
+                            "Tahun": r["Tahun"] || "",
+                            "Status": r["Status"] || "",
+                            "Foto": r["Foto"] || "",
+                        };
+                        
+                        // Masukkan atribut tambahan (extras) jika ada di urutan paling akhir
+                        const standardKeys = ["Jenis_Objek", "Kode", "Nama Objek", "X", "Y", "Jenis", "Desa", "Kecamatan", "Kab_Kota", "Provinsi", "Deskripsi_Objek", "Sumber", "Tahun", "Status", "Foto"];
+                        Object.keys(r).forEach(k => {
+                            if (!standardKeys.includes(k)) {
+                                shpProps[k] = r[k];
+                            }
+                        });
+
+                        return {
+                            type: "Feature",
+                            geometry: { type: "Point", coordinates: [Number(r.X), Number(r.Y)] },
+                            properties: shpProps, 
+                        };
+                    }),
             };
 
+            const baseName = getBaseName(); 
             const shpwrite = await import("@mapbox/shp-write");
+            
             const zipContent = await shpwrite.zip(geojson, {
-                folder: 'sigkbak_shapefile',
-                types: { point: 'sigkbak_points' }
+                folder: baseName, 
+                types: { point: baseName } 
             });
 
             let blob;
@@ -196,7 +282,7 @@ export const ExportPage = () => {
             const a = document.createElement("a");
             const url = URL.createObjectURL(blob);
             a.href = url;
-            a.download = `sigkbak_shapefile_${Date.now()}.zip`;
+            a.download = `${baseName}.zip`; 
             document.body.appendChild(a); 
             a.click();
             document.body.removeChild(a); 
@@ -210,17 +296,17 @@ export const ExportPage = () => {
     };
 
     const exportFormats = [
-        { key: "xlsx", label: "Excel (.xlsx)", desc: "Tabel lengkap dengan semua atribut", icon: FileSpreadsheet, color: "text-green-600 bg-green-50", action: exportExcel },
+        { key: "xlsx", label: "Excel (.xlsx)", desc: "Tabel lengkap dengan semua atribut baku", icon: FileSpreadsheet, color: "text-green-600 bg-green-50", action: exportExcel },
         { key: "shp", label: "Shapefile (.shp)", desc: "Format GIS (dikompres dalam .zip)", icon: Archive, color: "text-purple-600 bg-purple-50", action: exportShapefile },
-        { key: "geojson", label: "GeoJSON", desc: "Format standar GIS dengan geometri", icon: FileJson, color: "text-blue-600 bg-blue-50", action: exportGeoJSON },
-        { key: "csv", label: "CSV", desc: "Tabel sederhana tanpa format", icon: FileText, color: "text-amber-600 bg-amber-50", action: exportCSV },
+        { key: "geojson", label: "GeoJSON", desc: "Format standar web GIS dengan geometri", icon: FileJson, color: "text-blue-600 bg-blue-50", action: exportGeoJSON },
+        { key: "csv", label: "CSV", desc: "Tabel sederhana tanpa format file", icon: FileText, color: "text-amber-600 bg-amber-50", action: exportCSV },
     ];
 
     return (
         <div className="space-y-6">
             <div>
                 <h1 className="text-xl font-bold text-slate-800">Export Data</h1>
-                <p className="text-sm text-slate-400 mt-0.5">Download data objek dalam berbagai format dan filter</p>
+                <p className="text-sm text-slate-400 mt-0.5">Download data objek dalam struktur kolom baku Geoportal KBAK</p>
             </div>
 
             {error && <div className="bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-xl px-4 py-3">{error}</div>}
@@ -254,7 +340,7 @@ export const ExportPage = () => {
                     </div>
                 </div>
 
-                {/* Bagian 2: Filter Wilayah (Baru) */}
+                {/* Bagian 2: Filter Wilayah */}
                 <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 h-full">
                     <div className="flex items-center gap-2 mb-3">
                         <MapPin size={16} className="text-blue-500" />

@@ -1,20 +1,66 @@
-# React + Vite
+# SIGKBAK - Sistem Informasi Geografis Kawasan Bentang Alam Karst
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+SIGKBAK adalah aplikasi Sistem Informasi Geografis (SIG) berbasis web yang dirancang untuk memetakan, mengelola, dan memvisualisasikan data spasial Kawasan Bentang Alam Karst (KBAK). Aplikasi ini dilengkapi dengan fitur manajemen data spasial (Unggah & Edit Atribut), visualisasi layer dinamis, kontrol filter, serta halaman manajemen Admin.
 
-Currently, two official plugins are available:
+## 🚀 Teknologi Utama
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Aplikasi ini dibangun menggunakan ekosistem modern berikut:
+- **Frontend:** React.js + Vite
+- **Styling:** Tailwind CSS + PostCSS
+- **Database & Auth:** Supabase
+- **Peta/Spasial:** GeoJSON (`kbak.geojson`)
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 📋 Prasyarat Sistem (Requirements)
 
-## Expanding the ESLint configuration
+Sebelum menjalankan proyek ini secara lokal, pastikan perangkat Anda telah memenuhi atau menginstal kebutuhan berikut:
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+1. **Node.js**
+   - Versi yang direkomendasikan: **Node.js v18.x** atau versi LTS terbaru.
+   - Cek versi Node.js Anda di terminal dengan perintah: `node -v`
+2. **NPM (Node Package Manager)**
+   - Biasanya otomatis terinstal bersama Node.js.
+   - Cek versi dengan perintah: `npm -v`
+3. **Browser Modern**
+   - Google Chrome, Mozilla Firefox, atau Microsoft Edge versi terbaru (mendukung WebGL untuk performa rendering peta).
+4. **Koneksi Internet**
+   - Diperlukan untuk sinkronisasi data dengan database Supabase secara real-time.
 
+---
+
+## 🛠️ Langkah Instalasi & Cara Menjalankan
+
+Ikuti langkah-langkah berikut untuk menjalankan aplikasi di laptop Anda:
+
+### 1. Ekstrak file / Clone Repositori
+Jika Anda mendapatkan file ini dalam bentuk ZIP, ekstrak terlebih dahulu ke folder pilihan Anda. Jika menggunakan Git, jalankan perintah:
+```bash
+git clone https://github.com/rizalizul/sigkbak.git
+cd sigkbak
+```
+
+### 2. Install Dependensi (Library)
+Buka terminal atau command prompt di dalam folder proyek `sigkbak`, lalu jalankan perintah berikut untuk mengunduh semua library yang dibutuhkan:
+```bash
+npm install
+```
+*Catatan: Jika terjadi masalah konflik versi dependensi saat instalasi, gunakan perintah alternatif: `npm install --legacy-peer-deps`*
+
+### 3. Jalankan Aplikasi dalam Mode Pengembangan (Development)
+Setelah instalasi selesai, jalankan server lokal dengan perintah:
+```bash
+npm run dev
+```
+
+### 4. Buka di Browser
+Setelah server berjalan, terminal akan menampilkan alamat URL lokal. Biasanya aplikasi dapat diakses melalui:
+```bash
+http://localhost:5173/
+```
+Buka tautan tersebut di browser Anda untuk melihat aplikasi secara langsung.
+
+## 🏗️ Struktur Proyek
 ```
 sigkbak
 ├─ eslint.config.js
@@ -24,67 +70,33 @@ sigkbak
 ├─ postcss.config.js
 ├─ public
 │  ├─ data
-│  │  └─ kbak.geojson
+│  │  └─ kbak.geojson      # Data spasial utama KBAK
 │  ├─ favicon.svg
-│  └─ icons.svg
-├─ README.md
+│  ├─ icons.svg
+│  └─ logo.png
 ├─ src
 │  ├─ App.jsx
-│  ├─ assets
-│  │  ├─ hero.png
-│  │  ├─ react.svg
-│  │  └─ vite.svg
-│  ├─ components
-│  │  ├─ Map
-│  │  │  ├─ DynamicLayer.jsx
-│  │  │  ├─ GeoSearch.jsx
-│  │  │  ├─ KBAKLayer.jsx
-│  │  │  ├─ MapControls.jsx
-│  │  │  ├─ MapView.jsx
-│  │  │  └─ PermalinkSync.jsx
-│  │  ├─ Sidebar
-│  │  │  ├─ FilterPanel.jsx
-│  │  │  ├─ LayerControl.jsx
-│  │  │  └─ PublicSidebar.jsx
-│  │  ├─ UI
-│  │  │  ├─ AtributEditor.jsx
-│  │  │  └─ MapPickerModal.jsx
-│  │  └─ Upload
-│  │     ├─ ColumnSelector.jsx
-│  │     ├─ JenisCombobox.jsx
-│  │     └─ ReviewPanel.jsx
-│  ├─ constants
-│  │  └─ mapConfig.js
-│  ├─ hooks
-│  │  ├─ useAuth.js
-│  │  ├─ useJenisObjek.js
-│  │  ├─ useObjekSpasial.js
-│  │  └─ usePreview.js
-│  ├─ index.css
+│  ├─ assets               # Aset gambar statis
+│  ├─ components           # Komponen reusable (Map, Sidebar, UI, Upload)
+│  ├─ constants            # Konfigurasi peta bawaan
+│  ├─ hooks               # Custom hooks untuk state & integrasi Supabase
 │  ├─ lib
-│  │  └─ supabase.js
+│  │  └─ supabase.js       # Konfigurasi & inisialisasi Supabase client
 │  ├─ main.jsx
-│  ├─ pages
-│  │  ├─ admin
-│  │  │  ├─ AdminLayout.jsx
-│  │  │  ├─ AuditPage.jsx
-│  │  │  ├─ ChangePasswordPage.jsx
-│  │  │  ├─ DashboardPage.jsx
-│  │  │  ├─ DataPage.jsx
-│  │  │  ├─ ExportPage.jsx
-│  │  │  ├─ JenisPage.jsx
-│  │  │  ├─ UploadPage.jsx
-│  │  │  └─ UsersPage.jsx
-│  │  ├─ LoginPage.jsx
-│  │  ├─ PublicMapPage.jsx
-│  │  └─ RegisterPage.jsx
-│  ├─ router
-│  │  └─ index.jsx
-│  └─ utils
-│     ├─ markerUtils.js
-│     └─ parseFile.js
+│  ├─ pages                # Halaman aplikasi (Public Map, Login, Admin Dashboard)
+│  ├─ router               # Pengaturan rute halaman (React Router)
+│  └─ utils                # Fungsi pembantu (parser file, marker helper)
 ├─ tailwind.config.js
-├─ vercel.json
+├─ vercel.json             # Konfigurasi deployment untuk Vercel
 └─ vite.config.js
-
 ```
+
+## 📦 Produksi & Deployment
+Jika ingin melakukan kompilasi aplikasi untuk siap diunggah ke hosting/produksi:
+```bash
+npm run build
+```
+Hasil kompilasi final berupa file HTML, CSS, dan JS statis akan berada di dalam folder `dist/.`
+
+### Tip Tambahan untuk Anda:
+Jika nanti Anda memiliki berkas variabel lingkungan seperti `.env` (untuk menyimpan URL atau Key Supabase), pastikan untuk menambahkan bagian **Konfigurasi `.env`** di dalam bagian prasyarat agar pengguna lain tahu nilai apa saja yang perlu diisi.

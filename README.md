@@ -8,6 +8,7 @@ Aplikasi ini dibangun menggunakan ekosistem modern berikut:
 - **Frontend:** React.js + Vite
 - **Styling:** Tailwind CSS + PostCSS
 - **Database & Auth:** Supabase
+- **Penyimpanan Gambar:** Cloudinary
 - **Peta/Spasial:** GeoJSON (`kbak.geojson`)
 
 ---
@@ -28,6 +29,19 @@ Sebelum menjalankan proyek ini secara lokal, pastikan perangkat Anda telah memen
    - Diperlukan untuk sinkronisasi data dengan database Supabase secara real-time.
 
 ---
+## 🔑 Konfigurasi Variabel Lingkungan (.env)
+
+Aplikasi ini memerlukan konfigurasi environment variabel untuk terhubung dengan Supabase dan Cloudinary. 
+
+1. Duplikat atau ubah nama file `.env.example` yang ada di root direktori menjadi `.env`.
+2. Buka file `.env` tersebut dan pastikan variabel berikut sudah terisi dengan benar sesuai kredensial layanan Anda:
+
+```text
+VITE_SUPABASE_URL=https://dvtjodtuyhyeksqzuvzh.supabase.co
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key_here
+VITE_CLOUDINARY_CLOUD_NAME=djz67oliz
+VITE_CLOUDINARY_UPLOAD_PRESET=kbak_photos
+```
 
 ## 🛠️ Langkah Instalasi & Cara Menjalankan
 
@@ -97,6 +111,3 @@ Jika ingin melakukan kompilasi aplikasi untuk siap diunggah ke hosting/produksi:
 npm run build
 ```
 Hasil kompilasi final berupa file HTML, CSS, dan JS statis akan berada di dalam folder `dist/.`
-
-### Tip Tambahan untuk Anda:
-Jika nanti Anda memiliki berkas variabel lingkungan seperti `.env` (untuk menyimpan URL atau Key Supabase), pastikan untuk menambahkan bagian **Konfigurasi `.env`** di dalam bagian prasyarat agar pengguna lain tahu nilai apa saja yang perlu diisi.

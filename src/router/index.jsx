@@ -3,6 +3,7 @@ import { lazy, Suspense } from "react";
 import { PublicMapPage } from "../pages/PublicMapPage";
 import { LoginPage }     from "../pages/LoginPage";
 import { RegisterPage }  from "../pages/RegisterPage";
+import { UpdatePasswordPage } from "../pages/UpdatePasswordPage";
 import { Map, Loader2 }  from "lucide-react";
 
 // Lazy load semua halaman admin agar tidak ikut bundle halaman publik
@@ -31,6 +32,7 @@ export const router = createBrowserRouter([
     { path: "/",         element: <PublicMapPage /> },
     { path: "/login",    element: <LoginPage /> },
     { path: "/register", element: <RegisterPage /> },
+    { path: "/update-password", element: <UpdatePasswordPage /> },
     {
         path: "/admin",
         element: <Suspense fallback={<AdminFallback />}><AdminLayout /></Suspense>,
